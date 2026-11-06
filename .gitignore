@@ -1,0 +1,32 @@
+# dependencies
+node_modules/
+
+# next.js / build output
+.next/
+out/
+build/
+dist/
+*.tsbuildinfo
+next-env.d.ts
+
+# secrets: never commit
+.env
+.env.*
+!.env.example
+
+# local go/no-go state (order ids + approval links; regenerated per run)
+.gonogo/
+
+# local tooling
+.claude/
+*.db
+*.db-journal
+*.sqlite
+coverage/
+test-results/
+playwright-report/
+.vercel/
+.netlify/
+*.log
+.DS_Store
+Thumbs.db

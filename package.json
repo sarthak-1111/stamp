@@ -1,0 +1,17 @@
+{
+  "name": "stamp",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Stamp: strangers put a refundable hold on the line to reach you; real messages get it back.",
+  "license": "MIT",
+  "engines": {
+    "node": ">=20.9"
+  },
+  "scripts": {
+    "gonogo": "node --env-file=.env.local scripts/gonogo.mjs"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "1.32.2",
+    "@paypal/agent-toolkit": "1.11.0"
+  }
+}
