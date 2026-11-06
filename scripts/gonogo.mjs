@@ -557,30 +557,49 @@ async function cmdCoverage() {
     extract: { tools: localNames, create_order_input_has_intent: JSON.stringify(createOrderSchema ?? {}).includes('intent') },
   });
 
-  // Remote sandbox MCP server (streamable HTTP), bearer = sandbox access token.
+  // Remote sandbox MCP server, bearer = sandbox access token. Streamable HTTP first, then SSE.
+  const bearer = { Authorization: `Bearer ${token}` };
+  const withTimeout = (p, ms, what) => Promise.race([p, new Promise((_, rej) => setTimeout(() => rej(new Error(`${what} timeout ${ms / 1000}s`)), ms))]);
+  const attempts = [];
   let remote = { ok: false };
-  try {
-    const { StreamableHTTPClientTransport } = await import('@modelcontextprotocol/sdk/client/streamableHttp.js');
-    const transport = new StreamableHTTPClientTransport(new URL(REMOTE_MCP_URL), {
-      requestInit: { headers: { Authorization: `Bearer ${token}` } },
-    });
-    const rc = new Client({ name: 'stamp-gonogo-remote', version: '0.1.0' });
-    await Promise.race([rc.connect(transport), new Promise((_, rej) => setTimeout(() => rej(new Error('connect timeout 25s')), 25_000))]);
-    const listed = await rc.listTools();
-    remote = { ok: true, tools: listed.tools.map((t) => t.name).sort() };
-    await rc.close();
-  } catch (e) {
-    remote = { ok: false, error: String(e?.message ?? e).slice(0, 300) };
+  for (const kind of ['streamable-http', 'sse']) {
+    const url = kind === 'sse' ? REMOTE_MCP_URL.replace(/\/http$/, '/sse') : REMOTE_MCP_URL;
+    try {
+      let transport;
+      if (kind === 'sse') {
+        const { SSEClientTransport } = await import('@modelcontextprotocol/sdk/client/sse.js');
+        transport = new SSEClientTransport(new URL(url), {
+          requestInit: { headers: bearer },
+          eventSourceInit: { fetch: (u, init) => fetch(u, { ...init, headers: { ...(init?.headers ?? {}), ...bearer } }) },
+        });
+      } else {
+        const { StreamableHTTPClientTransport } = await import('@modelcontextprotocol/sdk/client/streamableHttp.js');
+        transport = new StreamableHTTPClientTransport(new URL(url), { requestInit: { headers: bearer } });
+      }
+      const rc = new Client({ name: 'stamp-gonogo-remote', version: '0.1.0' });
+      await withTimeout(rc.connect(transport), 25_000, 'connect');
+      const listed = await withTimeout(rc.listTools(), 25_000, 'tools/list');
+      remote = { ok: true, transport: kind, url, tools: listed.tools.map((t) => t.name).sort() };
+      remote.createOrderInputHasIntent = JSON.stringify(listed.tools.find((t) => t.name === 'create_order')?.inputSchema ?? {}).includes('"intent"');
+      await rc.close();
+      attempts.push({ kind, url, ok: true });
+      break;
+    } catch (e) {
+      attempts.push({ kind, url, ok: false, error: String(e?.message ?? e).slice(0, 200) });
+    }
   }
+  remote.attempts = attempts;
   log(state, {
     step: 'coverage.remote-mcp',
     method: 'MCP tools/list',
-    path: REMOTE_MCP_URL,
-    status: remote.ok ? `${remote.tools.length} tools` : 'not reachable with client-credentials bearer',
-    note: remote.ok ? remote.tools.join(',') : remote.error,
+    path: remote.url ?? REMOTE_MCP_URL,
+    status: remote.ok ? `${remote.tools.length} tools via ${remote.transport}` : 'not reachable with client-credentials bearer',
+    note: remote.ok ? remote.tools.join(',') : JSON.stringify(attempts),
     extract: remote,
   });
 
+  // create_order only counts as covering our operation if its schema can express intent=AUTHORIZE.
+  const localIntent = JSON.stringify(createOrderSchema ?? {}).includes('"intent"');
   const needs = {
     'create order (intent AUTHORIZE)': ['create_order'],
     'get order': ['get_order'],
@@ -589,9 +608,17 @@ async function cmdCoverage() {
     'capture authorization': ['capture_authorization', 'capture_authorized_payment'],
     payouts: ['create_payout', 'create_batch_payout', 'get_payout'],
   };
+  const covers = (names, list, intentOk) => names.filter((n) => list.includes(n) && (n !== 'create_order' || intentOk));
   const matrix = Object.fromEntries(
-    Object.entries(needs).map(([op, names]) => [op, { local: names.filter((n) => localNames.includes(n)), remote: remote.ok ? names.filter((n) => remote.tools.includes(n)) : null }]),
+    Object.entries(needs).map(([op, names]) => [
+      op,
+      {
+        local: covers(names, localNames, localIntent),
+        remote: remote.ok ? covers(names, remote.tools, remote.createOrderInputHasIntent) : null,
+      },
+    ]),
   );
+  matrix['create order (intent AUTHORIZE)'].note = `create_order exists but its input schema has no intent field (local=${localIntent}, remote=${remote.ok ? remote.createOrderInputHasIntent : 'n/a'}); the toolkit hard-codes intent CAPTURE`;
   state.coverage = { localNames, remote, matrix };
   saveState(state);
   console.log(JSON.stringify(matrix, null, 2));
