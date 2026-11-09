@@ -33,7 +33,7 @@ function env(name: string): string {
   return (process.env[name] ?? '').trim();
 }
 
-function appUrl(): string {
+export function appUrl(): string {
   const explicit = env('APP_URL');
   if (explicit) return explicit.replace(/\/+$/, '');
   const prod = env('VERCEL_PROJECT_PRODUCTION_URL');
