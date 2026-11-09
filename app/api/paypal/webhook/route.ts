@@ -5,6 +5,8 @@ import { json } from '@/lib/http';
 import { verifyWebhookSignature } from '@/lib/paypal/api';
 
 export const dynamic = 'force-dynamic';
+// PayPal calls and AI triage (run after the response via after()) need more than a 10 s default.
+export const maxDuration = 60;
 
 /**
  * PayPal webhooks. Every event is verified with PayPal (verify-webhook-signature) before anything

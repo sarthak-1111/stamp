@@ -6,6 +6,8 @@ import { ActionSchema } from '@/lib/validation';
 import { holdView } from '@/lib/views';
 
 export const dynamic = 'force-dynamic';
+// PayPal calls and AI triage (run after the response via after()) need more than a 10 s default.
+export const maxDuration = 60;
 
 /** The recipient's decision: reply / worth_it (release the hold), spam (capture + donate), or grant / decline a free-pass request. */
 export async function POST(req: Request, ctx: { params: Promise<{ messageId: string }> }) {

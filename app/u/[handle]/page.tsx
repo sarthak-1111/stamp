@@ -7,6 +7,8 @@ import { getPublicPage } from '@/lib/views';
 import { SendForm } from './SendForm';
 
 export const dynamic = 'force-dynamic';
+// PayPal calls and AI triage (run after the response via after()) need more than a 10 s default.
+export const maxDuration = 60;
 
 type Props = { params: Promise<{ handle: string }> };
 

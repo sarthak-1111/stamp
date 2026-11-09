@@ -4,6 +4,8 @@ import { readJson } from '@/lib/http';
 import { clientIpHash, LIMITS, takeRateLimit } from '@/lib/ratelimit';
 
 export const dynamic = 'force-dynamic';
+// PayPal calls and AI triage (run after the response via after()) need more than a 10 s default.
+export const maxDuration = 60;
 
 export const OPTIONS = preflight;
 

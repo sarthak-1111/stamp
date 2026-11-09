@@ -5,6 +5,8 @@ import { getLedger } from '@/lib/views';
 import { LedgerGrid } from './LedgerGrid';
 
 export const dynamic = 'force-dynamic';
+// PayPal calls and AI triage (run after the response via after()) need more than a 10 s default.
+export const maxDuration = 60;
 export const metadata: Metadata = { title: 'Ledger', referrer: 'no-referrer' };
 
 export default async function LedgerPage() {

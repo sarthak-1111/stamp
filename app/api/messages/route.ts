@@ -4,6 +4,8 @@ import { clientIpHash, LIMITS, takeRateLimit } from '@/lib/ratelimit';
 import { parseSend } from '@/lib/validation';
 
 export const dynamic = 'force-dynamic';
+// PayPal calls and AI triage (run after the response via after()) need more than a 10 s default.
+export const maxDuration = 60;
 
 /** A stranger sends a message. Free lane: delivered now. Otherwise: returns PayPal's approval link. */
 export async function POST(req: Request) {

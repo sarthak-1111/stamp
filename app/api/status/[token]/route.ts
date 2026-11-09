@@ -6,6 +6,8 @@ import { clientIpHash, LIMITS, takeRateLimit } from '@/lib/ratelimit';
 import { getStatusView } from '@/lib/views';
 
 export const dynamic = 'force-dynamic';
+// PayPal calls and AI triage (run after the response via after()) need more than a 10 s default.
+export const maxDuration = 60;
 
 /** Sender status, polled by /s/[token]. Re-verifies with PayPal (throttled) before answering. */
 export async function GET(req: Request, ctx: { params: Promise<{ token: string }> }) {

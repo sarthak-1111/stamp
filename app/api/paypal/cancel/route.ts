@@ -3,6 +3,8 @@ import { getConfig } from '@/lib/config';
 import { handleApprovalCancel } from '@/lib/holds/service';
 
 export const dynamic = 'force-dynamic';
+// PayPal calls and AI triage (run after the response via after()) need more than a 10 s default.
+export const maxDuration = 60;
 
 /** The buyer clicked "Cancel and return" on PayPal's page. */
 export async function GET(req: Request) {

@@ -99,6 +99,8 @@ async function handle(req: Request): Promise<Response> {
   }
 }
 
+// PayPal calls and AI triage (run after the response via after()) need more than a 10 s default.
+export const maxDuration = 60;
 export const POST = handle;
 export const GET = handle;
 export const DELETE = handle;
