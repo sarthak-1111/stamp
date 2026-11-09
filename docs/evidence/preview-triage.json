@@ -1,24 +1,29 @@
 {
-  "what": "Triage output for the landing page's example message, produced by Stamp's real pipeline (free-lane message to a local recipient with topics battery storage, grid software, climate hiring).",
-  "recordedAt": "2026-11-09T01:34:12.933Z",
+  "what": "Triage output for the landing page's example message, produced by Stamp's real pipeline (free-lane message to a local page with the topics below). Regenerate with scripts/record-preview-triage.mjs.",
+  "recordedAt": "2026-11-09T02:07:55.619Z",
+  "topics": [
+    "battery storage",
+    "grid software",
+    "climate hiring"
+  ],
   "input": {
     "senderName": "Leah Park",
-    "senderEmail": "leah@parkandfield.co",
+    "senderEmail": "leah@parkandfield.example",
     "subject": "Pilot of our battery health sensor at one of your sites",
     "body": "Hi Maya, I'm Leah, a hardware engineer who left a utility to build a low-cost sensor that predicts cell failures in stationary battery storage. We're looking for two sites for a free six-week pilot this spring. Would a 20-minute call next week make sense? I can send the test data from our first pilot beforehand."
   },
   "triage": {
     "source": "model",
     "model": "gpt-oss:120b",
-    "fitScore": 85,
-    "fitReason": "Directly related to battery storage with a pilot proposal.",
+    "fitScore": 88,
+    "fitReason": "The proposal directly concerns battery storage technology, matching Maya's interest area.",
     "riskScore": 5,
-    "riskReason": "No malicious intent evident; standard business outreach.",
-    "summary": "Leah Park requests a free six‑week pilot of a battery health sensor at Maya’s sites, proposing a brief call.",
-    "draftReply": "Hi Leah, thank you for reaching out. The pilot sounds interesting; could you share more details about the sensor and data requirements? I’m available for a 20‑minute call next week.",
+    "riskReason": "The message is a standard business outreach with no obvious scam or manipulation cues.",
+    "summary": "Leah Park requests a free six‑week pilot of a battery health sensor at one of Maya Chen's sites.",
+    "draftReply": "Hi Leah, thank you for reaching out. The pilot sounds interesting; could you share a brief technical overview and any data from your previous pilot? I’ll review and get back to you about scheduling a call.",
     "recommendation": "reply",
     "injection": false,
     "flags": [],
-    "latencyMs": 7695
+    "latencyMs": 5743
   }
 }

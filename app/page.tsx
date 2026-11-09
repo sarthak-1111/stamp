@@ -51,7 +51,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ e
             <Link href="/setup" className="btn btn-primary btn-lg">
               Create your page
             </Link>
-            <Link href="/@demo" className="btn btn-secondary btn-lg">
+            <Link href="/@maya" className="btn btn-secondary btn-lg">
               Try a live page
               <ArrowRight {...ICON} aria-hidden />
             </Link>
@@ -158,18 +158,20 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ e
             <code>{`POST /api/v1/messages
 {
   "to": "maya",
-  "from": { "name": "Ava", "email": "ava@northbeam.dev" },
+  "from": { "name": "Northbeam", "email": "ava@northbeam.example" },
   "agent": "Ava, an outreach agent run by Northbeam",
-  "subject": "Pilot for your storage sites",
+  "subject": "Dispatch software for grid batteries",
   "body": "Hi Maya, ..."
 }
 
 201 Created
 {
+  "lane": "hold",
   "state": "DRAFT",
   "approve_url": "https://www.sandbox.paypal.com/checkoutnow?token=...",
-  "status_url": "/s/...",
-  "hold": { "amount": "5.00", "currency": "USD" }
+  "status_api": ".../api/v1/status/...",
+  "hold": { "amount": "5.00", "currency": "USD" },
+  "next_step": "Send approve_url to the person you act for. ..."
 }`}</code>
           </pre>
         </div>
