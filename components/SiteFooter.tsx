@@ -1,19 +1,25 @@
 import Link from 'next/link';
+import { StampMark } from './Brand';
 
 export function SiteFooter() {
   return (
-    <footer className="mt-20 border-t border-line/70">
-      <div className="mx-auto flex max-w-6xl flex-col gap-3 px-4 py-8 text-sm text-ink-3 sm:flex-row sm:items-center sm:justify-between sm:px-6">
-        <p className="max-w-xl">
-          Stamp is a hackathon demo running on the <strong className="font-semibold text-ink-2">PayPal sandbox</strong>. No real money moves.
-          Stamp never pays the recipient.
-        </p>
-        <p className="flex gap-4">
-          <Link className="underline-offset-4 hover:underline" href="/#fair">
+    <footer className="mt-24 border-t border-line">
+      <div className="mx-auto flex max-w-[1200px] flex-col gap-4 px-4 py-8 text-sm text-ink-3 sm:px-6 md:flex-row md:items-center md:justify-between lg:px-8">
+        <div className="flex items-start gap-3">
+          <StampMark size={18} />
+          <p className="max-w-xl">
+            A hackathon demo on the PayPal sandbox. No real money moves. Stamp never pays the recipient: spam holds go to charity.
+          </p>
+        </div>
+        <p className="flex gap-5">
+          <Link className="transition-colors hover:text-ink" href="/#fair">
             Fairness
           </Link>
-          <a className="underline-offset-4 hover:underline" href="https://github.com/sarthak-1111/stamp">
-            Source (MIT)
+          <Link className="transition-colors hover:text-ink" href="/#agents">
+            For agents
+          </Link>
+          <a className="transition-colors hover:text-ink" href="https://github.com/sarthak-1111/stamp">
+            Source, MIT
           </a>
         </p>
       </div>

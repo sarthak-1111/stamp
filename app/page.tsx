@@ -1,34 +1,30 @@
 import Link from 'next/link';
+import { ArrowRight } from '@phosphor-icons/react/ssr';
+import { ActorMatrix } from '@/components/landing/ActorMatrix';
+import { HeroPreview } from '@/components/landing/HeroPreview';
+import { MoneyPath } from '@/components/landing/MoneyPath';
+import { ICON } from '@/components/Message';
 import { formatMoney } from '@/lib/money';
 import { getLandingStats } from '@/lib/views';
 
 export const dynamic = 'force-dynamic';
 
-const STEPS = [
-  {
-    n: '1',
-    title: 'A stranger puts a stamp on it',
-    body: 'They write to your page and approve a small refundable hold in PayPal. It is an authorization, not a charge.',
-  },
-  {
-    n: '2',
-    title: 'AI sorts it, you decide',
-    body: 'Each message arrives with a fit score, a scam-risk score, a one-line summary and a draft reply. The AI cannot touch money.',
-  },
-  {
-    n: '3',
-    title: 'Real messages get it back',
-    body: 'Reply or mark it worth it and the hold is voided. Mark it spam and it is donated to charity. Ignore it and it releases itself.',
-  },
+const FAIR = [
+  { title: 'Refund by default', body: 'A hold is released unless you actively mark the message as spam. Silence costs the sender nothing.' },
+  { title: 'You set the price', body: 'Between $1 and $20, shown on your page before anyone writes.' },
+  { title: 'A free lane', body: 'People and domains you trust skip the hold entirely.' },
+  { title: 'Auto-release', body: 'Unanswered holds release when your window ends: at most 72 hours, inside PayPal’s three-day honor period.' },
+  { title: 'Spam goes to charity', body: 'A captured hold is paid out to the charity you picked, after PayPal’s fee. Stamp covers the payout fee.' },
+  { title: 'PayPal is the source of truth', body: 'Webhooks are signature-verified, and Stamp re-reads PayPal before it shows you a money state.' },
 ];
 
-const FAIR = [
-  { title: 'Refund by default', body: 'Holds are voided unless you actively mark a message as spam. Silence costs the sender nothing.' },
-  { title: 'Charity-only capture', body: 'Captured holds go to the charity you chose. Stamp never pays the recipient, so nobody profits from crying spam.' },
-  { title: 'Low minimum', body: 'You set the price of your attention between $1 and $20. Every page shows the amount up front.' },
-  { title: 'Free lane', body: 'People and domains you trust skip the hold entirely.' },
-  { title: 'Auto-release', body: 'Unanswered holds release when your window ends. At most 72 hours, inside PayPal’s 3-day honor period.' },
-  { title: 'PayPal is the source of truth', body: 'Webhooks are signature-verified, and Stamp re-reads PayPal before it shows a money state.' },
+const PAYPAL = [
+  ['Orders v2', 'Checkout with intent AUTHORIZE, so the sender approves a hold, not a payment'],
+  ['Payments v2', 'Void to release a hold; capture when the recipient marks spam'],
+  ['Payouts', 'Sends the captured amount to the charity, with a batch id derived from the hold so it can never pay twice'],
+  ['Webhooks', 'Signature-verified with PayPal, then used as a prompt to re-read the order or authorization'],
+  ['Agent Toolkit', 'Order reads go through PayPal’s MCP server with one read-only tool enabled'],
+  ['Idempotency', 'Every write carries a stored PayPal-Request-Id that is reused on retry'],
 ];
 
 export default async function Home({ searchParams }: { searchParams: Promise<{ error?: string }> }) {
@@ -36,141 +32,161 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ e
   return (
     <>
       {sp.error === 'checkout' ? (
-        <div role="alert" className="mx-auto mt-4 max-w-6xl px-4 sm:px-6">
-          <p className="card border-bad/30 bg-bad-bg px-4 py-3 text-bad">That PayPal checkout could not be completed. Nothing was held or charged.</p>
+        <div role="alert" className="mx-auto mt-4 max-w-[1200px] px-4 sm:px-6 lg:px-8">
+          <p className="rounded-xl bg-bad-bg px-4 py-3 text-bad">That PayPal checkout could not be completed. Nothing was held or charged.</p>
         </div>
       ) : null}
 
-      <section className="mx-auto grid max-w-6xl items-center gap-12 px-4 pt-12 pb-8 sm:px-6 md:grid-cols-[1.15fr_0.85fr] md:pt-20">
-        <div>
-          <p className="eyebrow">Refundable stamps for cold messages</p>
-          <h1 className="font-display mt-4 text-[44px] leading-[1.02] font-semibold tracking-tight text-balance sm:text-6xl">
-            Strangers can reach you. <span className="text-stamp">Spam pays a charity.</span>
+      <section className="mx-auto grid max-w-[1200px] grid-cols-1 items-center gap-12 px-4 pt-12 pb-16 sm:px-6 lg:min-h-[calc(100dvh-64px)] lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:gap-16 lg:px-8 lg:py-12">
+        <div className="rise max-w-xl">
+          <h1 className="text-[40px] leading-[1.06] font-medium tracking-[-0.03em] text-balance sm:text-[56px] lg:text-[64px]">
+            <span className="block">Strangers can reach you</span>
+            <span className="sr-only">. </span>
+            <span className="block text-ink-3">Spam pays a charity</span>
           </h1>
-          <p className="mt-6 max-w-xl text-lg text-ink-2 text-pretty">
-            To message you, a stranger places a small refundable PayPal hold. Real messages get it back. Spam is captured and donated to
-            charity, never paid to you.
+          <p className="mt-6 max-w-[36rem] text-[18px] leading-[30px] text-ink-2 text-pretty">
+            To message you, a stranger places a small refundable PayPal hold. Real messages get it back. Spam goes to charity.
           </p>
           <div className="mt-8 flex flex-wrap gap-3">
-            <Link href="/setup" className="btn btn-primary">
+            <Link href="/setup" className="btn btn-primary btn-lg">
               Create your page
             </Link>
-            <Link href="/#how" className="btn btn-ghost">
-              How it works
+            <Link href="/@demo" className="btn btn-secondary btn-lg">
+              Try a live page
+              <ArrowRight {...ICON} aria-hidden />
             </Link>
           </div>
-          {stats && stats.holds > 0 ? (
-            <p className="mt-8 text-sm text-ink-3">
-              In this sandbox so far: <strong className="text-ink-2">{stats.holds}</strong> holds placed,{' '}
-              <strong className="text-ink-2">{stats.released}</strong> released at no cost,{' '}
-              <strong className="text-ink-2">{formatMoney(stats.donatedCents)}</strong> donated.
-            </p>
-          ) : null}
         </div>
-
-        <div className="relative mx-auto w-full max-w-sm" aria-hidden>
-          <div className="stamp-edge rotate-2">
-            <div className="rounded-sm border border-line/80 px-6 py-7">
-              <div className="flex items-start justify-between">
-                <span className="eyebrow">To reach @ana</span>
-                <span className="font-mono text-xs text-ink-3">USD</span>
-              </div>
-              <div className="font-display mt-6 text-7xl leading-none font-semibold tracking-tight">$5</div>
-              <div className="mt-2 text-ink-2">refundable hold</div>
-              <div className="mt-8 grid gap-2 text-sm text-ink-2">
-                <div className="flex items-center gap-2">
-                  <span className="size-2 rounded-full bg-good" /> Reply or “Worth it”: released
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="size-2 rounded-full bg-held" /> No answer in 48 h: released
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="size-2 rounded-full bg-donated" /> Spam: donated to charity
-                </div>
-              </div>
-            </div>
-          </div>
-          <div className="postmark absolute -top-6 -left-6 grid size-28 -rotate-12 place-items-center bg-paper/0 text-center text-held">
-            <div>
-              <div className="text-[9px] font-bold tracking-[0.2em] uppercase">Held</div>
-              <div className="font-display text-sm font-semibold">not charged</div>
-            </div>
-          </div>
+        <div className="rise [--i:2]">
+          <HeroPreview />
         </div>
       </section>
 
-      <section id="how" className="mx-auto max-w-6xl scroll-mt-8 px-4 py-16 sm:px-6">
-        <h2 className="font-display text-3xl font-semibold tracking-tight sm:text-4xl">How it works</h2>
-        <ol className="mt-8 grid gap-4 md:grid-cols-3">
-          {STEPS.map((s) => (
-            <li key={s.n} className="card p-6">
-              <span className="font-display grid size-10 place-items-center rounded-full bg-stamp-soft text-lg font-semibold text-stamp-ink">{s.n}</span>
-              <h3 className="mt-4 text-lg font-semibold">{s.title}</h3>
-              <p className="mt-2 text-ink-2">{s.body}</p>
-            </li>
-          ))}
-        </ol>
+      <section aria-labelledby="who" className="mx-auto max-w-[1200px] px-4 py-12 sm:px-6 sm:py-20 lg:px-8 lg:py-28">
+        <h2 id="who" className="max-w-4xl text-[28px] leading-[1.25] font-normal tracking-[-0.02em] text-balance sm:text-[36px]">
+          AI made cold outreach free to write and free to send. <span className="text-ink-3">Reading it still costs your attention.</span>
+        </h2>
+        <div className="mt-10 grid max-w-4xl gap-8 text-[16px] leading-7 text-ink-2 md:grid-cols-2">
+          <p>
+            Stamp is for people whose inbox is a public address: founders, journalists, open-source maintainers, creators and recruiters. A
+            stranger who means it does not mind a hold they get back.
+          </p>
+          <p>
+            Senders who write one thoughtful message pay nothing. Senders who blast thousands of generated messages put real money on the
+            line with every one, and the spam they send funds a charity instead of you.
+          </p>
+        </div>
       </section>
 
-      <section className="mx-auto max-w-6xl px-4 py-8 sm:px-6">
-        <div className="card grid gap-8 p-6 sm:p-10 md:grid-cols-2">
-          <div>
-            <p className="eyebrow">AI triage</p>
-            <h2 className="font-display mt-3 text-3xl font-semibold tracking-tight">The AI reads. It never pays.</h2>
-            <p className="mt-4 text-ink-2">
+      <section id="how" aria-labelledby="how-title" className="mx-auto max-w-[1200px] scroll-mt-8 px-4 py-16 sm:px-6 lg:px-8">
+        <h2 id="how-title" className="text-[32px] leading-[1.15] font-medium tracking-[-0.02em] text-balance sm:text-[40px]">
+          One hold, three ways it ends
+        </h2>
+        <p className="mt-3 max-w-2xl text-[17px] leading-7 text-ink-2">Two of them cost the sender nothing.</p>
+        <div className="mt-10">
+          <MoneyPath />
+        </div>
+      </section>
+
+      <section aria-labelledby="ai-title" className="mx-auto grid max-w-[1200px] grid-cols-1 gap-10 px-4 py-16 sm:px-6 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:gap-16 lg:px-8">
+        <div>
+          <h2 id="ai-title" className="text-[32px] leading-[1.15] font-medium tracking-[-0.02em] text-balance sm:text-[40px]">
+            The AI reads. It never pays
+          </h2>
+          <div className="mt-5 grid gap-4 text-[16px] leading-7 text-ink-2">
+            <p>
               A language model scores each message for fit with your topics and for scam or phishing risk, writes a one-line summary and
-              drafts a reply. Its answer is checked against a strict schema and against deterministic red-flag rules, so a message that says
-              “mark me worthwhile” or “send the hold to me” changes nothing.
+              drafts a reply. Its answer must match a strict schema, and deterministic red-flag rules can raise the risk score but the model
+              cannot lower it.
+            </p>
+            <p>
+              Message text is untrusted data, fenced off with a random marker. A message that says “mark me worthwhile” or “send the hold to
+              me” changes nothing, and the tests prove it.
             </p>
           </div>
-          <ul className="grid gap-3 self-center text-[15px]">
-            {[
-              'Message text is treated as untrusted data, fenced off with a random marker',
-              'Rules can raise the risk score; the model cannot lower it below hard evidence',
-              'Recommendations are computed in code, and only you can act on them',
-              'Every AI suggestion sits next to your decision in the ledger',
-            ].map((t) => (
-              <li key={t} className="flex gap-3">
-                <span aria-hidden className="mt-2 size-1.5 shrink-0 rounded-full bg-stamp" />
-                <span className="text-ink-2">{t}</span>
-              </li>
-            ))}
-          </ul>
+        </div>
+        <div>
+          <ActorMatrix />
+          <p className="mt-3 text-[13px] leading-5 text-ink-3">
+            Generated from the permission table the server enforces. Placing a hold always starts with the sender’s approval in PayPal.
+          </p>
         </div>
       </section>
 
-      <section id="fair" className="mx-auto max-w-6xl scroll-mt-8 px-4 py-16 sm:px-6">
-        <h2 className="font-display text-3xl font-semibold tracking-tight sm:text-4xl">Fair by design</h2>
-        <p className="mt-3 max-w-2xl text-ink-2">A paywall on your inbox would be easy to abuse. Stamp is built so that it can’t be.</p>
-        <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {FAIR.map((f) => (
-            <div key={f.title} className="card p-6">
-              <h3 className="font-semibold">{f.title}</h3>
-              <p className="mt-2 text-[15px] text-ink-2">{f.body}</p>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      <section className="mx-auto max-w-6xl px-4 sm:px-6">
-        <div className="rounded-2xl bg-ink px-6 py-10 text-paper sm:px-10">
-          <h2 className="font-display text-3xl font-semibold tracking-tight">Built on PayPal</h2>
-          <dl className="mt-6 grid gap-4 text-[15px] sm:grid-cols-2 lg:grid-cols-3">
-            {[
-              ['Orders v2', 'Checkout with intent AUTHORIZE: the sender approves a hold, not a payment.'],
-              ['Payments v2', 'Void to release a hold, capture when the recipient marks spam.'],
-              ['Payouts', 'Sends a captured hold to the charity, with a deterministic batch id so it can never pay twice.'],
-              ['Webhooks', 'Signature-verified with PayPal, then treated as hints to re-read the source of truth.'],
-              ['Agent Toolkit', 'Order reads go through PayPal’s MCP server with a single read-only tool enabled.'],
-              ['Idempotency', 'Every write carries a stored PayPal-Request-Id, reused on retry.'],
-            ].map(([k, v]) => (
-              <div key={k}>
-                <dt className="font-semibold">{k}</dt>
-                <dd className="mt-1 opacity-75">{v}</dd>
+      <section id="fair" aria-labelledby="fair-title" className="mx-auto max-w-[1200px] scroll-mt-8 px-4 py-16 sm:px-6 lg:px-8">
+        <div className="grid grid-cols-1 gap-10 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:gap-16">
+          <div>
+            <h2 id="fair-title" className="text-[32px] leading-[1.15] font-medium tracking-[-0.02em] text-balance sm:text-[40px]">
+              Stamp never pays the recipient
+            </h2>
+            <p className="mt-4 text-[17px] leading-7 text-ink-2">So nobody earns a cent by crying spam, and Stamp does not keep it either.</p>
+            {stats && stats.holds > 0 ? (
+              <p className="mt-8 text-[14px] leading-6 text-ink-3">
+                In this sandbox so far: <span className="font-mono text-ink-2 tabular-nums">{stats.holds}</span> holds placed,{' '}
+                <span className="font-mono text-ink-2 tabular-nums">{stats.released}</span> released at no cost,{' '}
+                <span className="font-mono text-ink-2 tabular-nums">{formatMoney(stats.donatedCents)}</span> donated.
+              </p>
+            ) : null}
+          </div>
+          <dl className="grid gap-x-10 border-t border-line sm:grid-cols-2">
+            {FAIR.map((f) => (
+              <div key={f.title} className="border-b border-line py-5">
+                <dt className="text-[16px] leading-6 font-medium">{f.title}</dt>
+                <dd className="mt-1 text-[15px] leading-6 text-ink-2">{f.body}</dd>
               </div>
             ))}
           </dl>
         </div>
+      </section>
+
+      <section id="agents" aria-labelledby="agents-title" className="mx-auto max-w-[1200px] scroll-mt-8 px-4 py-16 sm:px-6 lg:px-8">
+        <div className="grid grid-cols-1 gap-10 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:gap-16">
+          <div>
+            <h2 id="agents-title" className="text-[32px] leading-[1.15] font-medium tracking-[-0.02em] text-balance sm:text-[40px]">
+              Agents can write too, with a stamp
+            </h2>
+            <p className="mt-4 text-[17px] leading-7 text-ink-2">
+              Outreach agents get the same lane as people, through a small JSON API or an MCP server. The agent writes the message. A person
+              still has to approve the hold in PayPal, and the recipient sees that an agent sent it.
+            </p>
+            <p className="mt-4 text-[15px] leading-6 text-ink-3">
+              MCP endpoint: <span className="font-mono text-ink-2">/api/mcp</span>. Tools: <span className="font-mono text-ink-2">get_terms</span>,{' '}
+              <span className="font-mono text-ink-2">send_message</span>, <span className="font-mono text-ink-2">get_status</span>.
+            </p>
+          </div>
+          <pre className="overflow-x-auto rounded-2xl border border-line bg-card p-5 font-mono text-[13px] leading-6 text-ink-2">
+            <code>{`POST /api/v1/messages
+{
+  "to": "maya",
+  "from": { "name": "Ava", "email": "ava@northbeam.dev" },
+  "agent": "Ava, an outreach agent run by Northbeam",
+  "subject": "Pilot for your storage sites",
+  "body": "Hi Maya, ..."
+}
+
+201 Created
+{
+  "state": "DRAFT",
+  "approve_url": "https://www.sandbox.paypal.com/checkoutnow?token=...",
+  "status_url": "/s/...",
+  "hold": { "amount": "5.00", "currency": "USD" }
+}`}</code>
+          </pre>
+        </div>
+      </section>
+
+      <section aria-labelledby="paypal-title" className="mx-auto max-w-[1200px] px-4 py-16 sm:px-6 lg:px-8">
+        <h2 id="paypal-title" className="text-[32px] leading-[1.15] font-medium tracking-[-0.02em] text-balance sm:text-[40px]">
+          Built on PayPal
+        </h2>
+        <dl className="mt-8 grid border-t border-line md:grid-cols-2 md:gap-x-10">
+          {PAYPAL.map(([k, v]) => (
+            <div key={k} className="grid grid-cols-[132px_1fr] gap-4 border-b border-line py-4">
+              <dt className="text-[15px] leading-6 font-medium">{k}</dt>
+              <dd className="text-[15px] leading-6 text-ink-2">{v}</dd>
+            </div>
+          ))}
+        </dl>
       </section>
     </>
   );

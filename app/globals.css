@@ -1,58 +1,77 @@
 @import 'tailwindcss';
 
-/* ------------------------------------------------------------------ tokens */
+/*
+ * Stamp design tokens.
+ * One neutral ramp (graphite with the faintest warm tint, like paper on a post office counter),
+ * one accent (cobalt stamp ink) used for the primary action and the hero stamp, and four toned-down
+ * status colours that each mean exactly one thing: held, released, donated, failed.
+ */
 :root {
-  --paper: #f6f1e7;
-  --paper-2: #eee6d6;
-  --card: #fffdf8;
-  --ink: #1b2232;
-  --ink-2: #4a5266;
-  --ink-3: #6b7285;
-  --line: #e0d6c2;
-  --stamp: #c8402a;
-  --stamp-ink: #a3321f;
-  --stamp-soft: #f7e1da;
-  --held: #94590a;
-  --held-bg: #fbecd2;
-  --good: #1f6b4b;
-  --good-bg: #dcefe3;
-  --donated: #5a3fae;
-  --donated-bg: #ebe5fa;
-  --bad: #b42318;
-  --bad-bg: #fde6e3;
-  --focus: #2563eb;
+  --paper: #f8f8f6;
+  --paper-2: #f0f0ed;
+  --card: #ffffff;
+  --ink: #1a1a18;
+  --ink-2: #52524c;
+  --ink-3: #6e6e67;
+  --line: rgb(26 26 24 / 0.09);
+  --line-2: rgb(26 26 24 / 0.16);
+  --stamp: #2347d6;
+  --stamp-hover: #1d3cb9;
+  --stamp-ink: #2142c8;
+  --stamp-soft: #e9edfc;
+  --primary-bg: var(--stamp);
+  --primary-fg: #ffffff;
+  --primary-hover: var(--stamp-hover);
+  --held: #8a5300;
+  --held-bg: #fbf1de;
+  --good: #146c3d;
+  --good-bg: #e3f2e9;
+  --donated: #8c2a76;
+  --donated-bg: #f7e9f3;
+  --bad: #be2a1f;
+  --bad-bg: #fcebe9;
+  --focus: #2347d6;
+  --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.05);
+  --shadow-lg: 0 8px 24px rgb(0 0 0 / 0.06);
+  --ease: cubic-bezier(0.22, 1, 0.36, 1);
   color-scheme: light;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --paper: #10141b;
-    --paper-2: #161b24;
-    --card: #1a202b;
-    --ink: #efe8da;
-    --ink-2: #b4bac7;
-    --ink-3: #8c93a3;
-    --line: #2c3342;
-    --stamp: #e8644b;
-    --stamp-ink: #f08a73;
-    --stamp-soft: #3a1d17;
-    --held: #f2b85a;
-    --held-bg: #3a2b10;
-    --good: #67cf9c;
-    --good-bg: #133423;
-    --donated: #b5a1f5;
-    --donated-bg: #2a2147;
-    --bad: #f3988c;
-    --bad-bg: #3d1714;
-    --focus: #7aa2ff;
+    --paper: #141415;
+    --paper-2: #232325;
+    --card: #1a1a1c;
+    --ink: #ededed;
+    --ink-2: #a1a1a6;
+    --ink-3: #85858b;
+    --line: rgb(237 237 237 / 0.08);
+    --line-2: rgb(237 237 237 / 0.14);
+    --stamp: #4566f0;
+    --stamp-hover: #5a78f5;
+    --stamp-ink: #93a6ff;
+    --stamp-soft: rgb(110 135 255 / 0.14);
+    --primary-bg: #ededed;
+    --primary-fg: #141415;
+    --primary-hover: #ffffff;
+    --held: #efb661;
+    --held-bg: rgb(239 182 97 / 0.12);
+    --good: #57c793;
+    --good-bg: rgb(87 199 147 / 0.12);
+    --donated: #e199d2;
+    --donated-bg: rgb(225 153 210 / 0.12);
+    --bad: #f27a72;
+    --bad-bg: rgb(242 122 114 / 0.13);
+    --focus: #93a6ff;
+    --shadow-sm: none;
+    --shadow-lg: 0 8px 24px rgb(0 0 0 / 0.35);
     color-scheme: dark;
   }
 }
 
 @theme inline {
-  --font-display: var(--font-fraunces), ui-serif, Georgia, serif;
-  --font-sans: var(--font-inter), ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
-  --font-mono: var(--font-jetbrains), ui-monospace, SFMono-Regular, Menlo, monospace;
+  --font-sans: var(--font-geist), ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, monospace;
   --color-paper: var(--paper);
   --color-paper-2: var(--paper-2);
   --color-card: var(--card);
@@ -60,6 +79,7 @@
   --color-ink-2: var(--ink-2);
   --color-ink-3: var(--ink-3);
   --color-line: var(--line);
+  --color-line-2: var(--line-2);
   --color-stamp: var(--stamp);
   --color-stamp-ink: var(--stamp-ink);
   --color-stamp-soft: var(--stamp-soft);
@@ -71,173 +91,239 @@
   --color-donated-bg: var(--donated-bg);
   --color-bad: var(--bad);
   --color-bad-bg: var(--bad-bg);
+  --ease-out: var(--ease);
 }
 
-/* ------------------------------------------------------------------ base */
-html {
-  -webkit-text-size-adjust: 100%;
-}
-body {
-  background: var(--paper);
-  color: var(--ink);
-}
-::selection {
-  background: var(--stamp-soft);
-}
-:focus-visible {
-  outline: 2px solid var(--focus);
-  outline-offset: 2px;
-  border-radius: 6px;
-}
-.skip-link {
-  position: absolute;
-  left: 12px;
-  top: -48px;
-  z-index: 50;
-  padding: 8px 12px;
-  border-radius: 8px;
-  background: var(--ink);
-  color: var(--paper);
-}
-.skip-link:focus {
-  top: 12px;
-}
-
-/* A postage stamp: perforated edge via two background layers (holes show the page behind). */
-.stamp-edge {
-  --r: 7px;
-  padding: calc(2 * var(--r) + 6px);
-  background:
-    radial-gradient(var(--r), #0000 97%, var(--card)) round calc(-1.5 * var(--r)) calc(-1.5 * var(--r)) / calc(3 * var(--r)) calc(3 * var(--r)),
-    linear-gradient(var(--card) 0 0) no-repeat 50% / calc(100% - 3 * var(--r)) calc(100% - 3 * var(--r));
-  filter: drop-shadow(0 1px 0 var(--line)) drop-shadow(0 10px 24px rgb(27 34 50 / 0.08));
-}
-.stamp-edge-sm {
-  --r: 3px;
-  padding: calc(2 * var(--r) + 2px);
-  background:
-    radial-gradient(var(--r), #0000 97%, var(--stamp)) round calc(-1.5 * var(--r)) calc(-1.5 * var(--r)) / calc(3 * var(--r)) calc(3 * var(--r)),
-    linear-gradient(var(--stamp) 0 0) no-repeat 50% / calc(100% - 3 * var(--r)) calc(100% - 3 * var(--r));
+@layer base {
+  /* ------------------------------------------------------------------ base */
+  html {
+    -webkit-text-size-adjust: 100%;
+    text-rendering: optimizeLegibility;
+  }
+  body {
+    background: var(--paper);
+    color: var(--ink);
+  }
+  ::selection {
+    background: var(--stamp-soft);
+  }
+  :focus-visible {
+    outline: 2px solid var(--focus);
+    outline-offset: 2px;
+  }
+  .skip-link {
+    position: absolute;
+    left: 12px;
+    top: -48px;
+    z-index: 50;
+    padding: 8px 12px;
+    border-radius: 8px;
+    background: var(--ink);
+    color: var(--paper);
+  }
+  .skip-link:focus {
+    top: 12px;
+  }
 }
 
-/* Postmark ring used for big state badges. */
-.postmark {
-  border: 2px solid currentColor;
-  outline: 1px solid currentColor;
-  outline-offset: 3px;
-  border-radius: 9999px;
-}
+/* Component classes live in the components layer, so Tailwind utilities can still override them. */
+@layer components {
+  /* ------------------------------------------------------------------ surfaces */
+  .card {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    box-shadow: var(--shadow-sm);
+  }
+  .well {
+    background: var(--paper-2);
+    border-radius: 12px;
+  }
 
-.card {
-  background: var(--card);
-  border: 1px solid var(--line);
-  border-radius: 16px;
-}
+  /* ------------------------------------------------------------------ controls */
+  .field {
+    width: 100%;
+    min-height: 44px;
+    border-radius: 10px;
+    border: 1px solid var(--line-2);
+    background: var(--card);
+    padding: 10px 12px;
+    color: var(--ink);
+    font-size: 16px; /* no zoom on iOS */
+    line-height: 1.4;
+    transition: border-color 150ms var(--ease);
+  }
+  .field:hover {
+    border-color: color-mix(in oklab, var(--line-2), var(--ink) 18%);
+  }
+  .field[aria-invalid='true'] {
+    border-color: var(--bad);
+  }
+  .field::placeholder {
+    color: var(--ink-3);
+  }
+  .field:disabled {
+    background: var(--paper-2);
+    color: var(--ink-2);
+  }
 
-.field {
-  width: 100%;
-  border-radius: 10px;
-  border: 1px solid var(--line);
-  background: var(--card);
-  padding: 10px 12px;
-  color: var(--ink);
-  font-size: 16px; /* no zoom on iOS */
-  line-height: 1.4;
-}
-.field:hover {
-  border-color: color-mix(in oklab, var(--line), var(--ink) 25%);
-}
-.field[aria-invalid='true'] {
-  border-color: var(--bad);
-}
-.field::placeholder {
-  color: var(--ink-3);
-}
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: 44px;
+    padding: 0 16px;
+    border-radius: 10px;
+    font-weight: 500;
+    font-size: 15px;
+    line-height: 1;
+    white-space: nowrap;
+    border: 1px solid transparent;
+    cursor: pointer;
+    text-decoration: none;
+    transition:
+      background-color 150ms var(--ease),
+      border-color 150ms var(--ease),
+      color 150ms var(--ease),
+      transform 150ms var(--ease);
+  }
+  .btn:active:not(:disabled) {
+    transform: scale(0.98);
+  }
+  .btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+  .btn-lg {
+    min-height: 48px;
+    padding: 0 20px;
+  }
+  .btn-sm {
+    min-height: 36px;
+    padding: 0 12px;
+    font-size: 14px;
+    border-radius: 8px;
+  }
+  .btn-primary {
+    background: var(--primary-bg);
+    color: var(--primary-fg);
+  }
+  .btn-primary:hover:not(:disabled) {
+    background: var(--primary-hover);
+  }
+  .btn-secondary {
+    background: var(--card);
+    color: var(--ink);
+    border-color: var(--line-2);
+  }
+  .btn-secondary:hover:not(:disabled) {
+    background: var(--paper-2);
+  }
+  .btn-quiet {
+    background: transparent;
+    color: var(--ink-2);
+  }
+  .btn-quiet:hover:not(:disabled) {
+    background: var(--paper-2);
+    color: var(--ink);
+  }
+  .btn-danger {
+    background: transparent;
+    color: var(--bad);
+    border-color: color-mix(in oklab, var(--bad), transparent 65%);
+  }
+  .btn-danger:hover:not(:disabled) {
+    background: var(--bad-bg);
+  }
+  .btn-danger-solid {
+    background: var(--bad);
+    color: #fff;
+  }
+  .btn-danger-solid:hover:not(:disabled) {
+    background: color-mix(in oklab, var(--bad), #000 12%);
+  }
 
-.btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  min-height: 44px;
-  padding: 10px 18px;
-  border-radius: 9999px;
-  font-weight: 600;
-  font-size: 15px;
-  transition:
-    background-color 120ms ease,
-    transform 120ms ease,
-    border-color 120ms ease;
-  border: 1px solid transparent;
-  cursor: pointer;
-  text-decoration: none;
-}
-.btn:active {
-  transform: translateY(1px);
-}
-.btn:disabled {
-  opacity: 0.55;
-  cursor: not-allowed;
-}
-.btn-primary {
-  background: var(--stamp);
-  color: #fff;
-}
-.btn-primary:hover:not(:disabled) {
-  background: var(--stamp-ink);
-}
-.btn-ink {
-  background: var(--ink);
-  color: var(--paper);
-}
-.btn-ink:hover:not(:disabled) {
-  background: color-mix(in oklab, var(--ink), var(--paper) 15%);
-}
-.btn-ghost {
-  background: transparent;
-  color: var(--ink);
-  border-color: var(--line);
-}
-.btn-ghost:hover:not(:disabled) {
-  background: var(--paper-2);
-}
-.btn-danger {
-  background: transparent;
-  color: var(--bad);
-  border-color: color-mix(in oklab, var(--bad), transparent 55%);
-}
-.btn-danger:hover:not(:disabled) {
-  background: var(--bad-bg);
-}
-.btn-danger-solid {
-  background: var(--bad);
-  color: #fff;
-}
+  /* Small quiet label: topics, flags, meta. */
+  .tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    border-radius: 6px;
+    padding: 2px 8px;
+    font-size: 13px;
+    line-height: 20px;
+    background: var(--paper-2);
+    color: var(--ink-2);
+  }
 
-.chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  border-radius: 9999px;
-  padding: 3px 10px;
-  font-size: 13px;
-  line-height: 1.4;
-  border: 1px solid var(--line);
-  background: var(--paper);
-  color: var(--ink-2);
-}
+  .link {
+    color: var(--stamp-ink);
+    text-decoration: underline;
+    text-decoration-color: color-mix(in oklab, var(--stamp-ink), transparent 60%);
+    text-underline-offset: 3px;
+    transition: text-decoration-color 150ms var(--ease);
+  }
+  .link:hover {
+    text-decoration-color: currentColor;
+  }
 
-.eyebrow {
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--ink-3);
+  /*
+   * Signature: a hold is a stamp. The paper has real perforations (transparent half-circles along every
+   * edge), so whatever sits behind shows through, like a stamp torn from a sheet.
+   * --r: hole radius. --perf-paper: paper colour. --perf-margin: paper between the holes and the design.
+   */
+  .perforated {
+    --r: 6px;
+    padding: calc(2 * var(--r) + var(--perf-margin, 4px));
+    background:
+      radial-gradient(var(--r), #0000 97%, var(--perf-paper, #fff)) round calc(-1.5 * var(--r)) calc(-1.5 * var(--r)) / calc(3 * var(--r))
+        calc(3 * var(--r)),
+      linear-gradient(var(--perf-paper, #fff) 0 0) no-repeat 50% / calc(100% - 3 * var(--r)) calc(100% - 3 * var(--r));
+  }
+
+  /* The small stamp that carries every hold amount in the app. */
+  .hold-stamp {
+    --r: 1.5px;
+    --perf-paper: var(--card);
+    --perf-margin: 1.5px;
+    display: inline-flex;
+    vertical-align: middle;
+    filter: drop-shadow(0 0 0.6px var(--line-2)) drop-shadow(0 1px 1px rgb(0 0 0 / 0.06));
+  }
+  .hold-stamp > span {
+    display: block;
+    padding: 2px 6px;
+    border-radius: 1px;
+    background: var(--ink);
+    color: var(--card);
+    font-family: var(--font-geist-mono), ui-monospace, monospace;
+    font-size: 12px;
+    line-height: 16px;
+    font-weight: 500;
+    font-variant-numeric: tabular-nums;
+  }
+  .hold-stamp[data-size='lg'] {
+    --r: 2px;
+    --perf-margin: 2px;
+  }
+  .hold-stamp[data-size='lg'] > span {
+    padding: 4px 10px;
+    font-size: 15px;
+    line-height: 20px;
+  }
+
+  /* Engraved texture for the large rendered stamp: fine lines, like intaglio printing. */
+  .engraving {
+    background-color: var(--stamp-engraving, #2347d6);
+    background-image:
+      repeating-linear-gradient(135deg, rgb(255 255 255 / 0.07) 0 1px, transparent 1px 4px),
+      radial-gradient(120% 90% at 85% 15%, rgb(255 255 255 / 0.16), transparent 60%);
+  }
 }
 
 dialog::backdrop {
-  background: rgb(16 20 27 / 0.55);
-  backdrop-filter: blur(2px);
+  background: rgb(10 10 12 / 0.5);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -245,11 +331,25 @@ dialog::backdrop {
   *::before,
   *::after {
     animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
   }
 }
 
-@keyframes pulse-dot {
+/* The one entrance on a page: a short fade and rise, staggered with --i. Pure CSS, so it never hides content without JS. */
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+.rise {
+  animation: rise 450ms var(--ease) both;
+  animation-delay: calc(var(--i, 0) * 50ms);
+}
+
+/* Only for live work in progress (PayPal is processing). */
+@keyframes live-dot {
   0%,
   100% {
     opacity: 1;
@@ -258,6 +358,6 @@ dialog::backdrop {
     opacity: 0.35;
   }
 }
-.pulse {
-  animation: pulse-dot 1.6s ease-in-out infinite;
+.live-dot {
+  animation: live-dot 1.6s var(--ease) infinite;
 }

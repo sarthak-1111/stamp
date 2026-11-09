@@ -2,36 +2,44 @@ import Link from 'next/link';
 import { currentOwner } from '@/lib/auth';
 import { Brand } from './Brand';
 
+const navLink = 'rounded-lg px-3 py-2 text-[15px] text-ink-2 transition-colors hover:bg-paper-2 hover:text-ink';
+
 export async function SiteHeader() {
   const owner = await currentOwner().catch(() => null);
   return (
-    <header className="border-b border-line/70">
-      <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-3 sm:px-6">
+    <header className="border-b border-line">
+      <div className="mx-auto flex h-16 max-w-[1200px] items-center justify-between gap-3 px-4 sm:px-6 lg:px-8">
         <div className="flex items-center gap-3">
           <Brand />
-          <span className="chip hidden !border-held/30 !bg-held-bg !text-held sm:inline-flex" title="Runs on the PayPal sandbox. No real money moves.">
+          <span className="tag !px-1.5 !text-[12px] !leading-[18px]" title="Runs on the PayPal sandbox. No real money moves.">
             Sandbox
           </span>
         </div>
-        <nav aria-label="Main" className="flex items-center gap-1 text-[15px] sm:gap-2">
+        <nav aria-label="Main" className="flex items-center gap-1">
           {owner ? (
             <>
-              <Link className="rounded-full px-3 py-2 text-ink-2 hover:bg-paper-2 hover:text-ink" href="/inbox">
+              <Link className={navLink} href="/inbox">
                 Inbox
               </Link>
-              <Link className="rounded-full px-3 py-2 text-ink-2 hover:bg-paper-2 hover:text-ink" href="/ledger">
+              <Link className={navLink} href="/ledger">
                 Ledger
               </Link>
-              <Link className="hidden rounded-full px-3 py-2 text-ink-2 hover:bg-paper-2 hover:text-ink sm:inline" href={`/@${owner.handle}`}>
+              <Link className={`${navLink} hidden sm:inline-flex`} href="/setup">
+                Settings
+              </Link>
+              <Link className={`${navLink} hidden font-mono !text-[14px] md:inline-flex`} href={`/@${owner.handle}`}>
                 @{owner.handle}
               </Link>
             </>
           ) : (
             <>
-              <Link className="hidden rounded-full px-3 py-2 text-ink-2 hover:bg-paper-2 hover:text-ink sm:inline" href="/#how">
+              <Link className={`${navLink} hidden md:inline-flex`} href="/#how">
                 How it works
               </Link>
-              <Link className="btn btn-ink !min-h-10 !px-4 !py-2 text-sm" href="/setup">
+              <Link className={`${navLink} hidden md:inline-flex`} href="/#agents">
+                For agents
+              </Link>
+              <Link className="btn btn-primary btn-sm ml-2" href="/setup">
                 Create your page
               </Link>
             </>

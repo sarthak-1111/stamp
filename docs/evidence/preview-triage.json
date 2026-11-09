@@ -1,0 +1,24 @@
+{
+  "what": "Triage output for the landing page's example message, produced by Stamp's real pipeline (free-lane message to a local recipient with topics battery storage, grid software, climate hiring).",
+  "recordedAt": "2026-11-09T01:34:12.933Z",
+  "input": {
+    "senderName": "Leah Park",
+    "senderEmail": "leah@parkandfield.co",
+    "subject": "Pilot of our battery health sensor at one of your sites",
+    "body": "Hi Maya, I'm Leah, a hardware engineer who left a utility to build a low-cost sensor that predicts cell failures in stationary battery storage. We're looking for two sites for a free six-week pilot this spring. Would a 20-minute call next week make sense? I can send the test data from our first pilot beforehand."
+  },
+  "triage": {
+    "source": "model",
+    "model": "gpt-oss:120b",
+    "fitScore": 85,
+    "fitReason": "Directly related to battery storage with a pilot proposal.",
+    "riskScore": 5,
+    "riskReason": "No malicious intent evident; standard business outreach.",
+    "summary": "Leah Park requests a free six‑week pilot of a battery health sensor at Maya’s sites, proposing a brief call.",
+    "draftReply": "Hi Leah, thank you for reaching out. The pilot sounds interesting; could you share more details about the sensor and data requirements? I’m available for a 20‑minute call next week.",
+    "recommendation": "reply",
+    "injection": false,
+    "flags": [],
+    "latencyMs": 7695
+  }
+}

@@ -86,7 +86,7 @@ export function StatusLive({ initial }: { initial: StatusView }) {
           </h1>
           <p className="mt-3 max-w-xl text-lg text-ink-2">{head.sub}</p>
           <div className="mt-5 flex flex-wrap items-center gap-2" aria-live="polite">
-            {h ? <StateBadge tone={h.tone} label={h.stateLabel} busy={!done} /> : <StateBadge tone="good" label="Delivered" />}
+            {h ? <StateBadge tone={h.tone} label={h.stateLabel} live={!done} /> : <StateBadge tone="good" label="Delivered" />}
             {h?.state === 'AUTHORIZED' && h.releaseAt && !h.pendingOp ? (
               <span className="chip">
                 <Countdown until={h.releaseAt} onElapsed={refresh} />
@@ -94,7 +94,7 @@ export function StatusLive({ initial }: { initial: StatusView }) {
             ) : null}
           </div>
         </div>
-        <Postmark tone={h?.tone ?? 'good'} top={head.postmark.top} main={head.postmark.main} bottom="Stamp" />
+        <Postmark id="status-postmark" tone={h?.tone ?? "good"} top={head.postmark.top} main={head.postmark.main} bottom="Stamp" />
       </div>
 
       {view.approveUrl ? (
