@@ -8,10 +8,37 @@
     "node": ">=20.9"
   },
   "scripts": {
-    "gonogo": "node --env-file=.env.local scripts/gonogo.mjs"
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit",
+    "gonogo": "node --env-file=.env.local scripts/gonogo.mjs",
+    "e2e:sandbox": "node --env-file=.env.local scripts/e2e-sandbox.mjs",
+    "webhook:register": "node --env-file=.env.local scripts/register-webhook.mjs"
   },
   "dependencies": {
+    "@electric-sql/pglite": "0.5.15",
     "@modelcontextprotocol/sdk": "1.32.2",
-    "@paypal/agent-toolkit": "1.11.0"
+    "@neondatabase/serverless": "1.2.0",
+    "@paypal/agent-toolkit": "1.11.0",
+    "ag-grid-community": "36.3.0",
+    "ag-grid-react": "36.3.0",
+    "next": "16.4.5",
+    "react": "19.3.1",
+    "react-dom": "19.3.1",
+    "server-only": "0.0.1",
+    "zod": "4.6.7"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "4.3.5",
+    "@types/node": "20.19.43",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "tailwindcss": "4.3.5",
+    "typescript": "5.9.3",
+    "vite": "6.4.5",
+    "vitest": "3.2.7"
   }
 }

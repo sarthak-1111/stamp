@@ -30,3 +30,6 @@ playwright-report/
 *.log
 .DS_Store
 Thumbs.db
+
+# local database (PGlite) used by `npm run dev` when DATABASE_URL is not set
+.data/
