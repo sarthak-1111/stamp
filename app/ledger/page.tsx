@@ -11,27 +11,24 @@ export default async function LedgerPage() {
   const owner = await currentOwner();
   if (!owner) {
     return (
-      <div className="mx-auto max-w-xl px-4 pt-16 sm:px-6">
-        <div className="card p-6 sm:p-8">
-          <h1 className="font-display text-3xl font-semibold">The ledger is private</h1>
-          <p className="mt-3 text-ink-2">Open your private inbox link first.</p>
-          <Link href="/setup" className="btn btn-primary mt-6">
-            Create a page
-          </Link>
-        </div>
+      <div className="rise mx-auto max-w-xl px-4 pt-16 sm:px-6">
+        <h1 className="text-[32px] leading-[1.15] font-medium tracking-[-0.02em]">The ledger is private</h1>
+        <p className="mt-3 text-[17px] leading-7 text-ink-2">Open your private inbox link first. It signs you in on this device.</p>
+        <Link href="/setup" className="btn btn-primary mt-8">
+          Create a page
+        </Link>
       </div>
     );
   }
   const { rows, events } = await getLedger(owner);
   return (
-    <div className="mx-auto max-w-7xl px-4 pt-8 sm:px-6">
-      <p className="eyebrow">Ledger · @{owner.handle}</p>
-      <h1 className="font-display mt-2 text-4xl font-semibold tracking-tight">Every hold, every decision</h1>
-      <p className="mt-2 max-w-3xl text-ink-2">
-        Each row is one message. The AI’s suggestion sits next to the decision that was actually made, and every money state was confirmed by
-        PayPal. The event log shows each PayPal call with its idempotency key.
+    <div className="rise mx-auto max-w-[1200px] px-4 pt-10 sm:px-6 sm:pt-12 lg:px-8">
+      <h1 className="text-[32px] leading-[1.15] font-medium tracking-[-0.02em]">Ledger</h1>
+      <p className="mt-2 max-w-3xl text-[16px] leading-7 text-ink-2">
+        Every message to <span className="font-mono text-[15px]">@{owner.handle}</span>, the AI’s suggestion next to the decision you made, and every
+        money state as PayPal confirmed it. Select a row to see each PayPal call with its idempotency key.
       </p>
-      <LedgerGrid rows={rows} events={events} />
+      <LedgerGrid initialRows={rows} initialEvents={events} />
     </div>
   );
 }

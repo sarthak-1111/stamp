@@ -326,6 +326,17 @@ dialog::backdrop {
   background: rgb(10 10 12 / 0.5);
 }
 
+/* Side sheet (ledger row details): slides in from the right edge. */
+@keyframes sheet-in {
+  from {
+    transform: translateX(24px);
+    opacity: 0;
+  }
+}
+dialog.sheet[open] {
+  animation: sheet-in 300ms var(--ease);
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
