@@ -30,6 +30,7 @@
   --donated-bg: #f7e9f3;
   --bad: #be2a1f;
   --bad-bg: #fcebe9;
+  --bad-solid-fg: #ffffff;
   --focus: #2347d6;
   --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.05);
   --shadow-lg: 0 8px 24px rgb(0 0 0 / 0.06);
@@ -62,6 +63,7 @@
     --donated-bg: rgb(225 153 210 / 0.12);
     --bad: #f27a72;
     --bad-bg: rgb(242 122 114 / 0.13);
+    --bad-solid-fg: #141415;
     --focus: #93a6ff;
     --shadow-sm: none;
     --shadow-lg: 0 8px 24px rgb(0 0 0 / 0.35);
@@ -99,6 +101,16 @@
   html {
     -webkit-text-size-adjust: 100%;
     text-rendering: optimizeLegibility;
+    -webkit-tap-highlight-color: rgb(35 71 214 / 0.12);
+  }
+  a,
+  button,
+  summary,
+  label,
+  input,
+  select,
+  textarea {
+    touch-action: manipulation;
   }
   body {
     background: var(--paper);
@@ -188,10 +200,11 @@
       color 150ms var(--ease),
       transform 150ms var(--ease);
   }
-  .btn:active:not(:disabled) {
+  .btn:active:not(:disabled, [aria-disabled='true']) {
     transform: scale(0.98);
   }
-  .btn:disabled {
+  .btn:disabled,
+  .btn[aria-disabled='true'] {
     opacity: 0.5;
     cursor: not-allowed;
   }
@@ -209,7 +222,7 @@
     background: var(--primary-bg);
     color: var(--primary-fg);
   }
-  .btn-primary:hover:not(:disabled) {
+  .btn-primary:hover:not(:disabled, [aria-disabled='true']) {
     background: var(--primary-hover);
   }
   .btn-secondary {
@@ -217,14 +230,14 @@
     color: var(--ink);
     border-color: var(--line-2);
   }
-  .btn-secondary:hover:not(:disabled) {
+  .btn-secondary:hover:not(:disabled, [aria-disabled='true']) {
     background: var(--paper-2);
   }
   .btn-quiet {
     background: transparent;
     color: var(--ink-2);
   }
-  .btn-quiet:hover:not(:disabled) {
+  .btn-quiet:hover:not(:disabled, [aria-disabled='true']) {
     background: var(--paper-2);
     color: var(--ink);
   }
@@ -233,14 +246,14 @@
     color: var(--bad);
     border-color: color-mix(in oklab, var(--bad), transparent 65%);
   }
-  .btn-danger:hover:not(:disabled) {
+  .btn-danger:hover:not(:disabled, [aria-disabled='true']) {
     background: var(--bad-bg);
   }
   .btn-danger-solid {
     background: var(--bad);
-    color: #fff;
+    color: var(--bad-solid-fg);
   }
-  .btn-danger-solid:hover:not(:disabled) {
+  .btn-danger-solid:hover:not(:disabled, [aria-disabled='true']) {
     background: color-mix(in oklab, var(--bad), #000 12%);
   }
 

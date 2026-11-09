@@ -150,11 +150,11 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ e
               still has to approve the hold in PayPal, and the recipient sees that an agent sent it.
             </p>
             <p className="mt-4 text-[15px] leading-6 text-ink-3">
-              MCP endpoint: <span className="font-mono text-ink-2">/api/mcp</span>. Tools: <span className="font-mono text-ink-2">get_terms</span>,{' '}
-              <span className="font-mono text-ink-2">send_message</span>, <span className="font-mono text-ink-2">get_status</span>.
+              MCP endpoint: <span translate="no" className="font-mono text-ink-2">/api/mcp</span>. Tools: <span translate="no" className="font-mono text-ink-2">get_terms</span>,{' '}
+              <span translate="no" className="font-mono text-ink-2">send_message</span>, <span translate="no" className="font-mono text-ink-2">get_status</span>.
             </p>
           </div>
-          <pre className="overflow-x-auto rounded-2xl border border-line bg-card p-5 font-mono text-[13px] leading-6 text-ink-2">
+          <pre translate="no" tabIndex={0} className="overflow-x-auto rounded-2xl border border-line bg-card p-5 font-mono text-[13px] leading-6 text-ink-2">
             <code>{`POST /api/v1/messages
 {
   "to": "maya",

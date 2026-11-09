@@ -16,6 +16,8 @@ type Tab = 'open' | 'requests' | 'done';
 type Action = 'reply' | 'worth_it' | 'spam' | 'grant' | 'decline';
 
 const ICON = { size: 16, weight: 'bold' } as const;
+/** Done cards render in pages, so a long history does not mean hundreds of animated cards. */
+const DONE_PAGE = 30;
 
 /** Hairline dividers for a 2x2 grid on phones and a 1x4 row from sm up. */
 const STAT_CELL = [
@@ -55,27 +57,31 @@ function senderNote(c: InboxCard): string | null {
 export function InboxClient({ initial }: { initial: InboxView }) {
   const [view, setView] = useState(initial);
   const [tab, setTab] = useState<Tab>('open');
-  const [drafts, setDrafts] = useState<Record<string, { text: string; edited: boolean; source: string | null }>>({});
   const [busy, setBusy] = useState<string | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [confirm, setConfirm] = useState<InboxCard | null>(null);
   const [reason, setReason] = useState<SpamReason>('bulk');
+  const [doneLimit, setDoneLimit] = useState(DONE_PAGE);
   const dialogRef = useRef<HTMLDialogElement>(null);
+  const cancelRef = useRef<HTMLButtonElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
+  const tabRefs = useRef<Partial<Record<Tab, HTMLButtonElement | null>>>({});
   const busyRef = useRef(busy);
   busyRef.current = busy;
 
-  // Keep AI drafts in sync until the recipient edits one.
+  // The open tab lives in the address (?tab=done), so reload, Back and shared links keep it.
   useEffect(() => {
-    setDrafts((prev) => {
-      const next = { ...prev };
-      for (const c of view.cards) {
-        const d = next[c.messageId];
-        const src = c.triage ? `${c.triage.source}:${c.triage.updatedAt}` : null;
-        if (!d || (!d.edited && d.source !== src)) next[c.messageId] = { text: c.triage?.draftReply ?? '', edited: false, source: src };
-      }
-      return next;
-    });
-  }, [view]);
+    const t = new URLSearchParams(window.location.search).get('tab');
+    if (t === 'requests' || t === 'done') setTab(t);
+  }, []);
+  function chooseTab(t: Tab, focus = false) {
+    setTab(t);
+    const url = new URL(window.location.href);
+    if (t === 'open') url.searchParams.delete('tab');
+    else url.searchParams.set('tab', t);
+    window.history.replaceState(null, '', url);
+    if (focus) tabRefs.current[t]?.focus();
+  }
 
   const refresh = useCallback(async () => {
     const res = await fetch('/api/inbox', { cache: 'no-store' }).catch(() => null);
@@ -90,31 +96,39 @@ export function InboxClient({ initial }: { initial: InboxView }) {
   }, [refresh]);
 
   useEffect(() => {
-    if (confirm) dialogRef.current?.showModal();
-    else dialogRef.current?.close();
+    if (confirm) {
+      dialogRef.current?.showModal();
+      // Start on Cancel: capturing a hold cannot be undone, so it must never be one Enter away.
+      cancelRef.current?.focus();
+    } else dialogRef.current?.close();
   }, [confirm]);
 
-  async function act(card: InboxCard, action: Action, spamReason?: SpamReason) {
+  async function act(card: InboxCard, action: Action, extra: { replyText?: string; spamReason?: SpamReason } = {}) {
+    if (busyRef.current) return;
     setBusy(card.messageId);
     setErrors((e) => ({ ...e, [card.messageId]: '' }));
+    let ok = false;
     try {
       const res = await fetch(`/api/inbox/${card.messageId}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           action,
-          ...(action === 'reply' ? { replyText: drafts[card.messageId]?.text ?? '' } : {}),
-          ...(action === 'spam' ? { confirm: true, reason: spamReason } : {}),
+          ...(action === 'reply' ? { replyText: extra.replyText ?? '' } : {}),
+          ...(action === 'spam' ? { confirm: true, reason: extra.spamReason } : {}),
         }),
       });
       const j = await res.json().catch(() => ({}));
-      if (!res.ok) setErrors((e) => ({ ...e, [card.messageId]: j.message ?? 'That did not work. Nothing changed.' }));
+      ok = res.ok;
+      if (!res.ok) setErrors((e) => ({ ...e, [card.messageId]: j.message ?? 'That did not work, and nothing changed. Try again.' }));
       await refresh();
     } catch {
-      setErrors((e) => ({ ...e, [card.messageId]: 'Network error. Nothing changed.' }));
+      setErrors((e) => ({ ...e, [card.messageId]: 'Network error, and nothing changed. Try again.' }));
     } finally {
       setBusy(null);
     }
+    // The decided card leaves the list; keep keyboard and screen reader users in the list, not on <body>.
+    if (ok) requestAnimationFrame(() => panelRef.current?.focus());
   }
 
   function askSpam(c: InboxCard) {
@@ -125,6 +139,23 @@ export function InboxClient({ initial }: { initial: InboxView }) {
   const open = useMemo(() => view.cards.filter(isOpen), [view]);
   const requests = useMemo(() => view.cards.filter((c) => c.lane === 'request' && !c.decision), [view]);
   const done = useMemo(() => view.cards.filter((c) => !isOpen(c) && !(c.lane === 'request' && !c.decision)), [view]);
+  const tabOrder: Tab[] = ['open', 'requests', 'done'];
+  function onTabKey(e: React.KeyboardEvent) {
+    const i = tabOrder.indexOf(tab);
+    const next =
+      e.key === 'ArrowRight'
+        ? tabOrder[(i + 1) % tabOrder.length]
+        : e.key === 'ArrowLeft'
+          ? tabOrder[(i + tabOrder.length - 1) % tabOrder.length]
+          : e.key === 'Home'
+            ? tabOrder[0]
+            : e.key === 'End'
+              ? tabOrder[tabOrder.length - 1]
+              : null;
+    if (!next) return;
+    e.preventDefault();
+    chooseTab(next, true);
+  }
   const r = view.recipient;
   const first = r.displayName.split(/\s+/)[0];
   const tabs: Array<[Tab, string, number]> = [
@@ -177,15 +208,20 @@ export function InboxClient({ initial }: { initial: InboxView }) {
         your public page.
       </p>
 
-      <div role="tablist" aria-label="Messages" className="mt-8 flex gap-1 overflow-x-auto rounded-xl border border-line bg-card p-1 sm:inline-flex">
+      <div role="tablist" aria-label="Messages" onKeyDown={onTabKey} className="mt-8 flex gap-1 overflow-x-auto rounded-xl border border-line bg-card p-1 sm:inline-flex">
         {tabs.map(([k, label, count]) => (
           <button
             key={k}
+            ref={(el) => {
+              tabRefs.current[k] = el;
+            }}
+            type="button"
             role="tab"
             id={`tab-${k}`}
             aria-selected={tab === k}
             aria-controls="inbox-panel"
-            onClick={() => setTab(k)}
+            tabIndex={tab === k ? 0 : -1}
+            onClick={() => chooseTab(k)}
             className={`relative shrink-0 rounded-lg px-3 py-2 text-[14px] leading-5 font-medium transition-colors ${tab === k ? 'text-ink' : 'text-ink-3 hover:text-ink'}`}
           >
             {tab === k ? <m.span layoutId="inbox-tab" className="absolute inset-0 rounded-lg bg-paper-2" transition={{ duration: 0.25, ease: EASE }} /> : null}
@@ -196,7 +232,7 @@ export function InboxClient({ initial }: { initial: InboxView }) {
         ))}
       </div>
 
-      <div id="inbox-panel" role="tabpanel" aria-labelledby={`tab-${tab}`} className="mt-5 grid gap-4">
+      <div ref={panelRef} id="inbox-panel" role="tabpanel" tabIndex={-1} aria-labelledby={`tab-${tab}`} className="mt-5 grid gap-4 rounded-2xl">
         {tab === 'open' && open.length === 0 ? (
           <Empty>
             Nothing to decide right now. Share{' '}
@@ -217,12 +253,10 @@ export function InboxClient({ initial }: { initial: InboxView }) {
                 <Card key={c.messageId}>
                   <OpenCard
                     card={c}
-                    draft={drafts[c.messageId]?.text ?? ''}
-                    onDraft={(text) => setDrafts((d) => ({ ...d, [c.messageId]: { text, edited: true, source: d[c.messageId]?.source ?? null } }))}
                     busy={busy === c.messageId}
                     disabled={busy !== null}
                     error={errors[c.messageId]}
-                    onReply={() => act(c, 'reply')}
+                    onReply={(replyText) => act(c, 'reply', { replyText })}
                     onWorthIt={() => act(c, 'worth_it')}
                     onSpam={() => askSpam(c)}
                     onElapsed={refresh}
@@ -238,13 +272,18 @@ export function InboxClient({ initial }: { initial: InboxView }) {
               ))
             : null}
           {tab === 'done'
-            ? done.map((c) => (
+            ? done.slice(0, doneLimit).map((c) => (
                 <Card key={c.messageId}>
                   <DoneCard card={c} />
                 </Card>
               ))
             : null}
         </AnimatePresence>
+        {tab === 'done' && done.length > doneLimit ? (
+          <button type="button" className="btn btn-secondary justify-self-center" onClick={() => setDoneLimit((n) => n + DONE_PAGE)}>
+            Show {Math.min(DONE_PAGE, done.length - doneLimit)} older
+          </button>
+        ) : null}
       </div>
 
       <dialog
@@ -252,7 +291,7 @@ export function InboxClient({ initial }: { initial: InboxView }) {
         aria-labelledby="spam-title"
         aria-describedby="spam-desc"
         onClose={() => setConfirm(null)}
-        className="m-auto w-[min(92vw,32rem)] rounded-2xl border border-line bg-card p-0 text-ink shadow-[var(--shadow-lg)]"
+        className="m-auto max-h-[90dvh] w-[min(92vw,32rem)] overflow-y-auto overscroll-contain rounded-2xl border border-line bg-card p-0 text-ink shadow-[var(--shadow-lg)]"
       >
         {confirm ? (
           <form
@@ -262,7 +301,7 @@ export function InboxClient({ initial }: { initial: InboxView }) {
               e.preventDefault();
               const c = confirm;
               setConfirm(null);
-              void act(c, 'spam', reason);
+              void act(c, 'spam', { spamReason: reason });
             }}
           >
             <h2 id="spam-title" className="text-[22px] leading-7 font-medium text-balance">
@@ -295,7 +334,7 @@ export function InboxClient({ initial }: { initial: InboxView }) {
               <p className="mt-4 rounded-lg bg-held-bg px-3 py-2 text-[14px] leading-5 text-held">The AI did not flag this message as spam. Make sure it really is.</p>
             ) : null}
             <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-              <button type="button" className="btn btn-secondary" autoFocus onClick={() => setConfirm(null)}>
+              <button ref={cancelRef} type="button" className="btn btn-secondary" onClick={() => setConfirm(null)}>
                 Cancel
               </button>
               <button type="submit" className="btn btn-danger-solid">
@@ -335,12 +374,10 @@ function AgentNote({ card }: { card: InboxCard }) {
 
 function OpenCard(props: {
   card: InboxCard;
-  draft: string;
-  onDraft: (t: string) => void;
   busy: boolean;
   disabled: boolean;
   error?: string;
-  onReply: () => void;
+  onReply: (text: string) => void;
   onWorthIt: () => void;
   onSpam: () => void;
   onElapsed: () => void;
@@ -348,6 +385,19 @@ function OpenCard(props: {
   const { card: c } = props;
   const amount = c.hold ? stampAmount(c.hold.amountCents) : null;
   const id = `msg-${c.messageId}`;
+  // The draft lives here, so typing re-renders this card only. It follows the AI's latest draft until edited.
+  const aiDraft = c.triage?.draftReply ?? '';
+  const [draft, setDraft] = useState(aiDraft);
+  const [edited, setEdited] = useState(false);
+  const [hint, setHint] = useState('');
+  useEffect(() => {
+    if (!edited) setDraft(aiDraft);
+  }, [aiDraft, edited]);
+  function guard(fn: () => void) {
+    return () => {
+      if (!props.disabled) fn();
+    };
+  }
   return (
     <article aria-labelledby={`${id}-subject`} className="card p-5 sm:p-6">
       <div className="flex items-start justify-between gap-3">
@@ -364,14 +414,14 @@ function OpenCard(props: {
           ) : null}
         </div>
       </div>
-      <h2 id={`${id}-subject`} className="mt-3 text-[18px] leading-7 font-medium text-balance">
+      <h2 id={`${id}-subject`} className="mt-3 text-[18px] leading-7 font-medium text-balance break-words">
         {c.subject}
       </h2>
 
       <div className="mt-4">{c.triage ? <TriagePanel triage={c.triage} /> : <p className="well p-4 text-[14px] text-ink-3">Triage pending…</p>}</div>
 
       <details className="group mt-3 rounded-xl border border-line">
-        <summary className="flex cursor-pointer list-none items-center justify-between px-4 py-3 text-[14px] leading-5 font-medium text-ink-2 select-none">
+        <summary className="flex cursor-pointer list-none items-center justify-between rounded-xl px-4 py-3 text-[14px] leading-5 font-medium text-ink-2 transition-colors select-none hover:bg-paper-2 hover:text-ink">
           Read the full message
           <CaretDown {...ICON} aria-hidden className="text-ink-3 transition-transform group-open:rotate-180" />
         </summary>
@@ -385,7 +435,26 @@ function OpenCard(props: {
         <label htmlFor={`${id}-reply`} className="text-[14px] leading-5 font-medium">
           Reply <span className="font-normal text-ink-3">drafted by the AI, edit before sending</span>
         </label>
-        <textarea id={`${id}-reply`} className="field mt-1.5" rows={3} value={props.draft} onChange={(e) => props.onDraft(e.target.value)} maxLength={2000} />
+        <textarea
+          id={`${id}-reply`}
+          name="reply"
+          autoComplete="off"
+          className="field mt-1.5"
+          rows={3}
+          value={draft}
+          onChange={(e) => {
+            setDraft(e.target.value);
+            setEdited(true);
+            setHint('');
+          }}
+          maxLength={2000}
+          aria-describedby={hint ? `${id}-hint` : undefined}
+        />
+        {hint ? (
+          <p id={`${id}-hint`} role="alert" className="mt-1.5 text-[14px] text-bad">
+            {hint}
+          </p>
+        ) : null}
       </div>
 
       {props.error ? (
@@ -395,13 +464,21 @@ function OpenCard(props: {
       ) : null}
 
       <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
-        <button type="button" className="btn btn-primary" disabled={props.disabled || !props.draft.trim()} onClick={props.onReply}>
+        <button
+          type="button"
+          className="btn btn-primary"
+          aria-disabled={props.disabled}
+          onClick={guard(() => {
+            if (!draft.trim()) setHint('Write a reply first, or use Worth it to release without one.');
+            else props.onReply(draft);
+          })}
+        >
           {props.busy ? 'Working…' : c.hold ? `Send reply and release ${amount}` : 'Send reply'}
         </button>
-        <button type="button" className="btn btn-secondary" disabled={props.disabled} onClick={props.onWorthIt}>
+        <button type="button" className="btn btn-secondary" aria-disabled={props.disabled} onClick={guard(props.onWorthIt)}>
           {c.hold ? 'Worth it, release' : 'Worth it'}
         </button>
-        <button type="button" className="btn btn-danger sm:ml-auto" disabled={props.disabled} onClick={props.onSpam}>
+        <button type="button" className="btn btn-danger sm:ml-auto" aria-disabled={props.disabled} onClick={guard(props.onSpam)}>
           {c.hold ? `Spam, donate ${amount}` : 'Spam'}
         </button>
       </div>
@@ -431,10 +508,10 @@ function RequestCard(props: { card: InboxCard; busy: boolean; disabled: boolean;
         </p>
       ) : null}
       <div className="mt-4 flex flex-col gap-2 sm:flex-row">
-        <button type="button" className="btn btn-primary" disabled={props.disabled} onClick={props.onGrant}>
+        <button type="button" className="btn btn-primary" aria-disabled={props.disabled} onClick={() => !props.disabled && props.onGrant()}>
           {props.busy ? 'Working…' : 'Grant free pass'}
         </button>
-        <button type="button" className="btn btn-secondary" disabled={props.disabled} onClick={props.onDecline}>
+        <button type="button" className="btn btn-secondary" aria-disabled={props.disabled} onClick={() => !props.disabled && props.onDecline()}>
           Decline
         </button>
       </div>
@@ -456,7 +533,7 @@ function DoneCard({ card: c }: { card: InboxCard }) {
           <StateBadge tone="neutral" label={c.lane === 'request' ? 'Free-pass request' : 'Free lane'} />
         )}
       </div>
-      <h2 className="mt-2 text-[16px] leading-6 font-medium">{c.subject}</h2>
+      <h2 className="mt-2 text-[16px] leading-6 font-medium text-pretty break-words">{c.subject}</h2>
       <p className="mt-1 text-[14px] leading-6 text-ink-2">
         {c.decision ? DECISION_COPY[c.decision] : (c.hold?.outcomeLabel ?? 'No decision')}
         {c.decisionReason ? `: ${SPAM_REASON_LABEL[c.decisionReason].toLowerCase()}` : ''}
@@ -473,7 +550,7 @@ function DoneCard({ card: c }: { card: InboxCard }) {
           {formatMoney(c.hold.donatedCents)} donated to {c.hold.charityName}, PayPal fee {formatMoney(c.hold.feeCents)}
         </p>
       ) : null}
-      {c.replyText ? <p className="well mt-3 px-3 py-2 text-[14px] leading-6 whitespace-pre-wrap">{c.replyText}</p> : null}
+      {c.replyText ? <p className="well mt-3 px-3 py-2 text-[14px] leading-6 break-words whitespace-pre-wrap">{c.replyText}</p> : null}
     </article>
   );
 }

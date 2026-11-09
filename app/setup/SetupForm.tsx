@@ -2,7 +2,7 @@
 
 import { Check, Copy } from '@phosphor-icons/react';
 import Link from 'next/link';
-import { useId, useMemo, useState } from 'react';
+import { useEffect, useId, useMemo, useRef, useState } from 'react';
 
 type Initial = {
   handle: string;
@@ -23,6 +23,16 @@ type Props = {
 };
 
 const PRESETS = [1, 3, 5, 10, 20];
+/** Error keys from the API, in form order, mapped to the id suffix of their control. */
+const FIELD_ID: Array<[string, string]> = [
+  ['handle', 'handle'],
+  ['displayName', 'name'],
+  ['topics', 'topics'],
+  ['holdDollars', 'hold'],
+  ['releaseMinutes', 'window'],
+  ['freeLane', 'free'],
+  ['charityId', 'charity-0'],
+];
 const ICON = { size: 16, weight: 'bold' } as const;
 
 /** PayPal's published US checkout rate (3.49% + $0.49). Matches the $0.66 fee observed on a $5.00 sandbox capture. */
@@ -36,7 +46,9 @@ export function SetupForm({ mode, charities, windows, initial }: Props) {
   const [handle, setHandle] = useState(initial?.handle ?? '');
   const [displayName, setDisplayName] = useState(initial?.displayName ?? '');
   const [bio, setBio] = useState(initial?.bio ?? '');
-  const [holdDollars, setHoldDollars] = useState<number>(initial?.holdDollars ?? 5);
+  // Kept as typed, so clearing the field does not snap it to 0; parsed where it is used.
+  const [holdText, setHoldText] = useState(String(initial?.holdDollars ?? 5));
+  const holdDollars = Number(holdText) || 0;
   const [topics, setTopics] = useState(initial?.topics ?? '');
   const [freeLane, setFreeLane] = useState(initial?.freeLane ?? '');
   const [releaseMinutes, setReleaseMinutes] = useState<number>(initial?.releaseMinutes ?? 48 * 60);
@@ -47,7 +59,14 @@ export function SetupForm({ mode, charities, windows, initial }: Props) {
   const [busy, setBusy] = useState(false);
   const [created, setCreated] = useState<{ handle: string; ownerKey: string } | null>(null);
   const [saved, setSaved] = useState(false);
-  const [copied, setCopied] = useState(false);
+  const [copy, setCopy] = useState<'idle' | 'copied' | 'failed'>('idle');
+  const linkRef = useRef<HTMLInputElement>(null);
+
+  // After a refused submit, put the cursor in the first field that needs fixing.
+  useEffect(() => {
+    const first = FIELD_ID.find(([k]) => errors[k]);
+    if (first) document.getElementById(`${uid}-${first[1]}`)?.focus();
+  }, [errors, uid]);
 
   const topicChips = useMemo(
     () => [...new Set(topics.split(',').map((t) => t.trim()).filter(Boolean))].slice(0, 8),
@@ -75,7 +94,7 @@ export function SetupForm({ mode, charities, windows, initial }: Props) {
           handle,
           displayName,
           bio,
-          holdDollars,
+          holdDollars: Number(holdText),
           topics: topicChips,
           freeLane: freeLane.split(/[\n,]/).map((s) => s.trim()).filter(Boolean),
           releaseMinutes,
@@ -91,7 +110,7 @@ export function SetupForm({ mode, charities, windows, initial }: Props) {
       if (mode === 'create') setCreated({ handle: j.handle, ownerKey: j.ownerKey });
       else setSaved(true);
     } catch {
-      setFormError('Network error. Please try again');
+      setFormError('Network error. Nothing was saved. Please try again.');
     } finally {
       setBusy(false);
     }
@@ -116,19 +135,29 @@ export function SetupForm({ mode, charities, windows, initial }: Props) {
             There are no passwords. This link is the only way to open your inbox on another device, and it is shown once.
           </p>
           <div className="mt-3 flex flex-col gap-2 sm:flex-row">
-            <input readOnly value={link} aria-label="Private inbox link" className="field font-mono !text-[14px]" onFocus={(e) => e.currentTarget.select()} />
+            <input ref={linkRef} readOnly value={link} aria-label="Private inbox link" className="field font-mono !text-[14px]" onFocus={(e) => e.currentTarget.select()} />
             <button
               type="button"
               className="btn btn-secondary shrink-0"
               onClick={async () => {
-                await navigator.clipboard.writeText(link).catch(() => undefined);
-                setCopied(true);
+                const ok = await navigator.clipboard.writeText(link).then(
+                  () => true,
+                  () => false,
+                );
+                setCopy(ok ? 'copied' : 'failed');
+                if (!ok) {
+                  linkRef.current?.focus();
+                  linkRef.current?.select();
+                }
               }}
             >
-              {copied ? <Check {...ICON} aria-hidden /> : <Copy {...ICON} aria-hidden />}
-              {copied ? 'Copied' : 'Copy link'}
+              {copy === 'copied' ? <Check {...ICON} aria-hidden /> : <Copy {...ICON} aria-hidden />}
+              {copy === 'copied' ? 'Copied' : 'Copy link'}
             </button>
           </div>
+          <p role="status" className="mt-2 text-[14px] leading-5 text-ink-2">
+            {copy === 'copied' ? 'Link copied. Keep it somewhere safe.' : copy === 'failed' ? 'Could not copy automatically. The link is selected: press Ctrl+C (or ⌘C) to copy it.' : ''}
+          </p>
         </div>
         <div className="mt-6 flex flex-wrap gap-3">
           <Link href="/inbox" className="btn btn-primary">
@@ -159,15 +188,12 @@ export function SetupForm({ mode, charities, windows, initial }: Props) {
           {formError}
         </p>
       ) : null}
-      {saved ? (
-        <p role="status" className="rounded-lg bg-good-bg px-4 py-3 text-[15px] text-good">
-          Saved. New messages use these terms; holds already placed keep theirs.
-        </p>
-      ) : null}
+      <div role="status">
+        {saved ? <p className="rounded-lg bg-good-bg px-4 py-3 text-[15px] text-good">Saved. New messages use these terms; holds already placed keep theirs.</p> : null}
+      </div>
 
-      <fieldset className="card grid gap-5 p-5 sm:p-6">
-        <legend className="sr-only">Your page</legend>
-        <h2 aria-hidden className="text-[18px] leading-7 font-medium">
+      <fieldset aria-labelledby={`${uid}-page-h`} className="card grid gap-5 p-5 sm:p-6">
+        <h2 id={`${uid}-page-h`} className="text-[18px] leading-7 font-medium">
           Your page
         </h2>
         <div>
@@ -180,6 +206,7 @@ export function SetupForm({ mode, charities, windows, initial }: Props) {
             </span>
             <input
               id={`${uid}-handle`}
+              name="handle"
               className="field font-mono"
               value={handle}
               onChange={(e) => {
@@ -196,11 +223,9 @@ export function SetupForm({ mode, charities, windows, initial }: Props) {
               {...err('handle')}
             />
           </div>
-          {handleNote && !errors.handle ? (
-            <p className={`mt-1.5 text-[14px] ${handleNote.ok ? 'text-good' : 'text-bad'}`} aria-live="polite">
-              {handleNote.text}
-            </p>
-          ) : null}
+          <p role="status" className={`text-[14px] ${handleNote?.ok ? 'text-good' : 'text-bad'} ${handleNote && !errors.handle ? 'mt-1.5' : ''}`}>
+            {handleNote && !errors.handle ? handleNote.text : ''}
+          </p>
           <ErrorText k="handle" />
         </div>
         <div className="grid gap-5 sm:grid-cols-2">
@@ -208,14 +233,14 @@ export function SetupForm({ mode, charities, windows, initial }: Props) {
             <label htmlFor={`${uid}-name`} className={label}>
               Display name
             </label>
-            <input id={`${uid}-name`} className="field mt-1.5" value={displayName} onChange={(e) => setDisplayName(e.target.value)} maxLength={60} placeholder="Maya Chen" {...err('displayName')} />
+            <input id={`${uid}-name`} name="display-name" autoComplete="name" className="field mt-1.5" value={displayName} onChange={(e) => setDisplayName(e.target.value)} maxLength={60} placeholder="Maya Chen" {...err('displayName')} />
             <ErrorText k="displayName" />
           </div>
           <div>
             <label htmlFor={`${uid}-topics`} className={label}>
               Topics you want to hear about
             </label>
-            <input id={`${uid}-topics`} className="field mt-1.5" value={topics} onChange={(e) => setTopics(e.target.value)} placeholder="battery storage, grid software" aria-describedby={`${uid}-topics-help`} {...err('topics')} />
+            <input id={`${uid}-topics`} name="topics" autoComplete="off" className="field mt-1.5" value={topics} onChange={(e) => setTopics(e.target.value)} placeholder="battery storage, grid software…" aria-describedby={`${uid}-topics-help`} {...err('topics')} />
             <p id={`${uid}-topics-help`} className={help}>
               Comma-separated, up to 8. The AI scores each message against these.
             </p>
@@ -235,13 +260,12 @@ export function SetupForm({ mode, charities, windows, initial }: Props) {
           <label htmlFor={`${uid}-bio`} className={label}>
             Short bio <span className="font-normal text-ink-3">optional</span>
           </label>
-          <textarea id={`${uid}-bio`} className="field mt-1.5" rows={2} value={bio} onChange={(e) => setBio(e.target.value)} maxLength={280} placeholder="Founder of a grid battery startup. I read everything and reply to what is relevant." />
+          <textarea id={`${uid}-bio`} name="bio" autoComplete="off" className="field mt-1.5" rows={2} value={bio} onChange={(e) => setBio(e.target.value)} maxLength={280} placeholder="Founder of a grid battery startup. I read everything and reply to what is relevant…" />
         </div>
       </fieldset>
 
-      <fieldset className="card grid gap-6 p-5 sm:p-6">
-        <legend className="sr-only">Terms</legend>
-        <h2 aria-hidden className="text-[18px] leading-7 font-medium">
+      <fieldset aria-labelledby={`${uid}-terms-h`} className="card grid gap-6 p-5 sm:p-6">
+        <h2 id={`${uid}-terms-h`} className="text-[18px] leading-7 font-medium">
           Terms senders agree to
         </h2>
         <div>
@@ -254,7 +278,7 @@ export function SetupForm({ mode, charities, windows, initial }: Props) {
                 key={p}
                 type="button"
                 aria-pressed={holdDollars === p}
-                onClick={() => setHoldDollars(p)}
+                onClick={() => setHoldText(String(p))}
                 className={`btn btn-sm min-w-12 font-mono ${holdDollars === p ? 'btn-primary' : 'btn-secondary'}`}
               >
                 ${p}
@@ -265,14 +289,16 @@ export function SetupForm({ mode, charities, windows, initial }: Props) {
             </label>
             <input
               id={`${uid}-hold`}
+              name="hold"
               type="number"
               inputMode="numeric"
+              autoComplete="off"
               min={1}
               max={20}
               step={1}
               className="field !min-h-9 !w-20 !py-1.5 font-mono"
-              value={holdDollars}
-              onChange={(e) => setHoldDollars(Number(e.target.value))}
+              value={holdText}
+              onChange={(e) => setHoldText(e.target.value)}
               {...err('holdDollars')}
             />
           </div>
@@ -287,7 +313,7 @@ export function SetupForm({ mode, charities, windows, initial }: Props) {
             <label htmlFor={`${uid}-window`} className={label}>
               Auto-release window
             </label>
-            <select id={`${uid}-window`} className="field mt-1.5" value={releaseMinutes} onChange={(e) => setReleaseMinutes(Number(e.target.value))} {...err('releaseMinutes')}>
+            <select id={`${uid}-window`} name="window" className="field mt-1.5" value={releaseMinutes} onChange={(e) => setReleaseMinutes(Number(e.target.value))} {...err('releaseMinutes')}>
               {windows.map((w) => (
                 <option key={w.minutes} value={w.minutes}>
                   {w.label}
@@ -301,7 +327,7 @@ export function SetupForm({ mode, charities, windows, initial }: Props) {
             <label htmlFor={`${uid}-free`} className={label}>
               Free lane <span className="font-normal text-ink-3">optional</span>
             </label>
-            <textarea id={`${uid}-free`} className="field mt-1.5 font-mono !text-[14px]" rows={3} value={freeLane} onChange={(e) => setFreeLane(e.target.value)} placeholder={'@mycompany.com\nfriend@example.org'} aria-describedby={`${uid}-free-help`} {...err('freeLane')} />
+            <textarea id={`${uid}-free`} name="free-lane" autoComplete="off" autoCapitalize="none" autoCorrect="off" spellCheck={false} className="field mt-1.5 font-mono !text-[14px]" rows={3} value={freeLane} onChange={(e) => setFreeLane(e.target.value)} placeholder={'@mycompany.com\nfriend@example.org'} aria-describedby={`${uid}-free-help`} {...err('freeLane')} />
             <p id={`${uid}-free-help`} className={help}>
               One address or @domain per line. These senders skip the hold. Granted free passes appear here too.
             </p>
@@ -314,12 +340,12 @@ export function SetupForm({ mode, charities, windows, initial }: Props) {
           </span>
           <div role="radiogroup" aria-labelledby={`${uid}-charity-label`} className="mt-2 grid gap-2">
             {charities.length === 0 ? <p className="text-bad">No charity is configured on this server.</p> : null}
-            {charities.map((c) => (
+            {charities.map((c, i) => (
               <label
                 key={c.id}
                 className={`flex cursor-pointer gap-3 rounded-xl border p-4 transition-colors ${charityId === c.id ? 'border-line-2 bg-paper-2' : 'border-line hover:bg-paper-2'}`}
               >
-                <input type="radio" name="charity" value={c.id} checked={charityId === c.id} onChange={() => setCharityId(c.id)} className="mt-1 accent-[var(--ink)]" />
+                <input id={`${uid}-charity-${i}`} type="radio" name="charity" value={c.id} checked={charityId === c.id} onChange={() => setCharityId(c.id)} className="mt-1 accent-[var(--ink)]" />
                 <span>
                   <span className="text-[15px] leading-6 font-medium">{c.name}</span>
                   <span className="mt-0.5 block text-[14px] leading-5 text-ink-3">{c.blurb}</span>
@@ -334,7 +360,7 @@ export function SetupForm({ mode, charities, windows, initial }: Props) {
       <div className="flex flex-col-reverse items-start gap-3 sm:flex-row sm:items-center sm:justify-between">
         <p className="text-[14px] leading-5 text-ink-3">Stamp never pays you. Released holds cost the sender nothing.</p>
         <button type="submit" className="btn btn-primary btn-lg" disabled={busy}>
-          {busy ? 'Saving…' : mode === 'create' ? 'Create my page' : 'Save settings'}
+          {busy ? 'Saving…' : mode === 'create' ? 'Create your page' : 'Save settings'}
         </button>
       </div>
     </form>

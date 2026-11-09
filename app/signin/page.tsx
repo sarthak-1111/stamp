@@ -19,7 +19,7 @@ async function openInbox(key: string): Promise<string | null> {
     return null;
   }
   const j = res ? await res.json().catch(() => ({})) : {};
-  return j.message ?? 'Network error. Nothing was changed.';
+  return j.message ?? 'Network error. Nothing was changed. Try again.';
 }
 
 /** The private key arrives in the URL fragment, which browsers never send to servers or in Referer headers. */

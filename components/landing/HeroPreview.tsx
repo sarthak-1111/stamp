@@ -22,7 +22,7 @@ export function HeroPreview() {
         Example of an inbox on Stamp: two strangers each placed a {amount} hold. The AI suggests replying to one and flags the other as a
         prompt-injection attempt. The holds do not change until Maya decides.
       </figcaption>
-      <div className="overflow-hidden rounded-[20px] border border-line bg-card shadow-[var(--shadow-lg)]">
+      <div inert className="overflow-hidden rounded-[20px] border border-line bg-card shadow-[var(--shadow-lg)] select-none">
         <div className="flex h-12 items-center gap-3 border-b border-line px-5">
           <span className="text-[14px] font-medium">Inbox</span>
           <span className="font-mono text-[12px] text-ink-3">

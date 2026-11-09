@@ -28,10 +28,10 @@ export default async function SenderPage({ params }: Props) {
     <div className="mx-auto grid max-w-[1200px] grid-cols-1 gap-10 px-4 pt-10 sm:px-6 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:gap-16 lg:px-8 lg:pt-16">
       <section aria-labelledby="who" className="rise">
         <p className="font-mono text-[13px] text-ink-3">@{page.handle}</p>
-        <h1 id="who" className="mt-2 text-[36px] leading-[1.1] font-medium tracking-[-0.02em] text-balance sm:text-[44px]">
+        <h1 id="who" className="mt-2 text-[36px] leading-[1.1] font-medium tracking-[-0.02em] text-balance break-words sm:text-[44px]">
           Write to {page.displayName}
         </h1>
-        {page.bio ? <p className="mt-4 text-[17px] leading-7 text-ink-2">{page.bio}</p> : null}
+        {page.bio ? <p className="mt-4 text-[17px] leading-7 break-words text-ink-2">{page.bio}</p> : null}
         {page.topics.length ? (
           <div className="mt-6">
             <h2 className="text-[13px] leading-5 text-ink-3">Happy to hear about</h2>
@@ -95,7 +95,7 @@ export default async function SenderPage({ params }: Props) {
             <h2 id="compose" className="text-[20px] font-medium">
               Your message
             </h2>
-            <p className="mt-4 text-bad">This page cannot accept messages right now.</p>
+            <p className="mt-4 text-bad">This page cannot accept messages right now. Try again later.</p>
           </>
         )}
       </section>

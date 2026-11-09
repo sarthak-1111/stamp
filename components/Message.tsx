@@ -29,7 +29,7 @@ export function TriagePanel({ triage: t, footer = true }: { triage: TriageData; 
   const rec = REC_COPY[t.recommendation];
   const flags = [...new Set(t.flags.map((f) => f.charAt(0).toUpperCase() + f.slice(1)))];
   return (
-    <section aria-label="AI triage" className="well p-4">
+    <div role="group" aria-label="AI triage" className="well p-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <span className="text-[13px] leading-5 text-ink-3">AI triage</span>
         {rec ? <StateBadge tone={rec.tone} label={`Suggests: ${rec.label}`} /> : null}
@@ -64,6 +64,6 @@ export function TriagePanel({ triage: t, footer = true }: { triage: TriageData; 
           {' · a suggestion, you decide'}
         </p>
       ) : null}
-    </section>
+    </div>
   );
 }

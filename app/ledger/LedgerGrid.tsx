@@ -5,11 +5,17 @@ import {
   AllCommunityModule,
   ModuleRegistry,
   themeQuartz,
+  type CellKeyDownEvent,
   type ColDef,
   type ColGroupDef,
+  type GetRowIdParams,
   type GridApi,
   type GridState,
   type ICellRendererParams,
+  type IRowNode,
+  type RowClassParams,
+  type RowSelectionOptions,
+  type StateUpdatedEvent,
   type ValueFormatterParams,
 } from 'ag-grid-community';
 import { AgGridReact } from 'ag-grid-react';
@@ -54,10 +60,11 @@ const eventsTheme = stampTheme.withParams({ rowHeight: 44 });
 
 // ---------------------------------------------------------------- formatting
 
-const money = (v: unknown) => (v === null || v === undefined || v === '' ? '' : `$${Number(v).toFixed(2)}`);
+const USD = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' });
+const WHEN = new Intl.DateTimeFormat(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit', hourCycle: 'h23' });
+const money = (v: unknown) => (v === null || v === undefined || v === '' ? '' : USD.format(Number(v)));
 const moneyFmt = (p: ValueFormatterParams) => money(p.value);
-const whenFmt = (p: ValueFormatterParams) =>
-  p.value ? new Date(p.value).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit', hourCycle: 'h23' }) : '';
+const whenFmt = (p: ValueFormatterParams) => (p.value ? WHEN.format(new Date(p.value)) : '');
 
 type Tone = 'neutral' | 'held' | 'good' | 'donated' | 'bad';
 const STATE: Record<string, { label: string; tone: Tone }> = {
@@ -209,6 +216,15 @@ const FILTERS: Array<{ key: FilterKey; label: string; test: (r: LedgerRow) => bo
 
 const NARROW_HIDDEN = ['subject', 'outcome', 'paypalFee', 'payoutFee', 'authorizationId', 'captureId', 'payoutBatchId', 'lastVerifiedAt'];
 
+const DEFAULT_COL_DEF: ColDef = { sortable: true, resizable: true };
+const ROW_SELECTION: RowSelectionOptions = { mode: 'singleRow', checkboxes: false, enableClickSelection: true };
+const getRowClass = (p: RowClassParams<LedgerRow>) => (p.node.rowPinned ? 'font-medium' : 'cursor-pointer');
+const getRowId = (p: GetRowIdParams<LedgerRow>) => p.data.messageId;
+const VIEWS = ['holds', 'events'] as const;
+// Shown when rows exist but the filter or search hides them all (AG Grid's default is "No Matching Rows").
+const HOLDS_LOCALE = { noMatchingRows: 'No messages match this filter or search.' };
+const EVENTS_LOCALE = { noMatchingRows: 'No events match this search.' };
+
 function loadState(): GridState | undefined {
   try {
     const raw = window.localStorage.getItem(STATE_KEY);
@@ -236,7 +252,28 @@ export function LedgerGrid({ initialRows, initialEvents }: { initialRows: Ledger
   const filterRef = useRef<FilterKey>('all');
   const sheetRef = useRef<HTMLDialogElement>(null);
 
-  useEffect(() => setGridState(loadState()), []);
+  // View, filter and search live in the address (?view=events&filter=donated&q=…), so reload, Back and links keep them.
+  useEffect(() => {
+    const sp = new URLSearchParams(window.location.search);
+    const v = sp.get('view');
+    if (v === 'events') setView('events');
+    const f = sp.get('filter');
+    if (f && FILTERS.some((x) => x.key === f)) {
+      setFilter(f as FilterKey);
+      filterRef.current = f as FilterKey;
+    }
+    const q = sp.get('q');
+    if (q) setQuick(q.slice(0, 100));
+    setGridState(loadState());
+  }, []);
+  function syncUrl(next: { view?: string; filter?: string; q?: string }) {
+    const url = new URL(window.location.href);
+    for (const [k, v] of Object.entries(next)) {
+      if (!v || (k === 'view' && v === 'holds') || (k === 'filter' && v === 'all')) url.searchParams.delete(k);
+      else url.searchParams.set(k, v);
+    }
+    window.history.replaceState(null, '', url);
+  }
 
   // Live: poll the ledger; AG Grid applies the delta by row id and flashes the cells that changed.
   useEffect(() => {
@@ -279,16 +316,41 @@ export function LedgerGrid({ initialRows, initialEvents }: { initialRows: Ledger
       donated += r.donated ?? 0;
       payoutFee += r.payoutFee ?? 0;
     });
-    setTotals([
-      {
-        messageId: '__total',
-        sender: `Total, ${n} ${n === 1 ? 'row' : 'rows'}`,
-        amount: amount || null,
-        paypalFee: fee || null,
-        donated: donated || null,
-        payoutFee: payoutFee || null,
-      } as LedgerRow,
-    ]);
+    const next = {
+      messageId: '__total',
+      sender: `Total, ${n} ${n === 1 ? 'row' : 'rows'}`,
+      amount: amount || null,
+      paypalFee: fee || null,
+      donated: donated || null,
+      payoutFee: payoutFee || null,
+    } as LedgerRow;
+    // Only a real change produces a new array; the grid treats a new array as new pinned data.
+    setTotals((prev) => {
+      const p = prev[0];
+      if (p && p.sender === next.sender && p.amount === next.amount && p.paypalFee === next.paypalFee && p.donated === next.donated && p.payoutFee === next.payoutFee) return prev;
+      return [next];
+    });
+  }, []);
+
+  const isExternalFilterPresent = useCallback(() => filterRef.current !== 'all', []);
+  const doesExternalFilterPass = useCallback(
+    (node: IRowNode<LedgerRow>) => (node.data ? (FILTERS.find((f) => f.key === filterRef.current)?.test(node.data) ?? true) : true),
+    [],
+  );
+  const onStateUpdated = useCallback((e: StateUpdatedEvent<LedgerRow>) => {
+    const { columnVisibility, columnSizing, columnOrder, columnPinning, sort } = e.state;
+    try {
+      window.localStorage.setItem(STATE_KEY, JSON.stringify({ columnVisibility, columnSizing, columnOrder, columnPinning, sort }));
+    } catch {
+      // storage blocked: layout just will not persist
+    }
+  }, []);
+  // Rows open their PayPal detail on click, and on Enter or Space for keyboard users.
+  const onCellKeyDown = useCallback((e: CellKeyDownEvent<LedgerRow>) => {
+    const ke = e.event as KeyboardEvent | null;
+    if (!ke || (ke.key !== 'Enter' && ke.key !== ' ') || !e.data || e.node.rowPinned) return;
+    ke.preventDefault();
+    setSelected(e.data);
   }, []);
 
   const counts = useMemo(() => Object.fromEntries(FILTERS.map((f) => [f.key, rows.filter(f.test).length])) as Record<FilterKey, number>, [rows]);
@@ -370,6 +432,11 @@ export function LedgerGrid({ initialRows, initialEvents }: { initialRows: Ledger
     setFilter(k);
     filterRef.current = k;
     holdsApi.current?.onFilterChanged();
+    syncUrl({ filter: k });
+  }
+  function chooseView(v: (typeof VIEWS)[number]) {
+    setView(v);
+    syncUrl({ view: v });
   }
 
   return (
@@ -391,7 +458,7 @@ export function LedgerGrid({ initialRows, initialEvents }: { initialRows: Ledger
       </dl>
 
       <div className="mt-6 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-        <div role="tablist" aria-label="Ledger view" className="inline-flex self-start rounded-xl border border-line bg-card p-1">
+        <div role="group" aria-label="Ledger view" className="inline-flex self-start rounded-xl border border-line bg-card p-1">
           {(
             [
               ['holds', 'Messages and holds', rows.length],
@@ -400,9 +467,9 @@ export function LedgerGrid({ initialRows, initialEvents }: { initialRows: Ledger
           ).map(([k, label, n]) => (
             <button
               key={k}
-              role="tab"
-              aria-selected={view === k}
-              onClick={() => setView(k)}
+              type="button"
+              aria-pressed={view === k}
+              onClick={() => chooseView(k)}
               className={`rounded-lg px-3 py-2 text-[14px] leading-5 font-medium transition-colors ${view === k ? 'bg-paper-2 text-ink' : 'text-ink-3 hover:text-ink'}`}
             >
               {label} <span className="font-mono text-[12px] text-ink-3 tabular-nums">{n}</span>
@@ -413,7 +480,20 @@ export function LedgerGrid({ initialRows, initialEvents }: { initialRows: Ledger
           <label htmlFor="ledger-search" className="sr-only">
             Search the ledger
           </label>
-          <input id="ledger-search" type="search" className="field !min-h-9 !py-1.5 sm:!w-64" placeholder="Search" value={quick} onChange={(e) => setQuick(e.target.value)} />
+          <input
+            id="ledger-search"
+            name="q"
+            type="search"
+            autoComplete="off"
+            spellCheck={false}
+            className="field !min-h-9 !py-1.5 sm:!w-64"
+            placeholder="Search…"
+            value={quick}
+            onChange={(e) => {
+              setQuick(e.target.value);
+              syncUrl({ q: e.target.value });
+            }}
+          />
           <button
             type="button"
             className="btn btn-secondary btn-sm shrink-0"
@@ -424,7 +504,7 @@ export function LedgerGrid({ initialRows, initialEvents }: { initialRows: Ledger
             }
           >
             <DownloadSimple {...ICON} aria-hidden />
-            CSV
+            Export CSV
           </button>
         </div>
       </div>
@@ -454,19 +534,12 @@ export function LedgerGrid({ initialRows, initialEvents }: { initialRows: Ledger
             theme={holdsTheme}
             rowData={rows}
             columnDefs={holdCols}
-            defaultColDef={{ sortable: true, resizable: true }}
+            defaultColDef={DEFAULT_COL_DEF}
             initialState={gridState}
-            onStateUpdated={(e) => {
-              const { columnVisibility, columnSizing, columnOrder, columnPinning, sort } = e.state;
-              try {
-                window.localStorage.setItem(STATE_KEY, JSON.stringify({ columnVisibility, columnSizing, columnOrder, columnPinning, sort }));
-              } catch {
-                // storage blocked: layout just will not persist
-              }
-            }}
+            onStateUpdated={onStateUpdated}
             quickFilterText={quick}
-            isExternalFilterPresent={() => filterRef.current !== 'all'}
-            doesExternalFilterPass={(node) => (node.data ? (FILTERS.find((f) => f.key === filterRef.current)?.test(node.data) ?? true) : true)}
+            isExternalFilterPresent={isExternalFilterPresent}
+            doesExternalFilterPass={doesExternalFilterPass}
             pinnedBottomRowData={totals}
             onFilterChanged={recomputeTotals}
             onRowDataUpdated={recomputeTotals}
@@ -474,28 +547,31 @@ export function LedgerGrid({ initialRows, initialEvents }: { initialRows: Ledger
               holdsApi.current = e.api;
               recomputeTotals();
             }}
-            rowSelection={{ mode: 'singleRow', checkboxes: false, enableClickSelection: true }}
+            rowSelection={ROW_SELECTION}
             onRowClicked={(e) => {
               if (e.data && !e.node.rowPinned) setSelected(e.data);
             }}
-            getRowClass={(p) => (p.node.rowPinned ? 'font-medium' : 'cursor-pointer')}
+            onCellKeyDown={onCellKeyDown}
+            getRowClass={getRowClass}
             groupHeaderHeight={32}
             tooltipShowDelay={300}
-            getRowId={(p) => p.data.messageId}
+            getRowId={getRowId}
             overlayNoRowsTemplate="No messages yet. Share your page to receive some."
+            localeText={HOLDS_LOCALE}
           />
         ) : (
           <AgGridReact<LedgerEvent>
             theme={eventsTheme}
             rowData={events}
             columnDefs={eventCols}
-            defaultColDef={{ sortable: true, resizable: true }}
+            defaultColDef={DEFAULT_COL_DEF}
             quickFilterText={quick}
             tooltipShowDelay={300}
             onGridReady={(e) => {
               eventsApi.current = e.api;
             }}
             overlayNoRowsTemplate="No PayPal events yet."
+            localeText={EVENTS_LOCALE}
           />
         )}
       </div>
@@ -519,7 +595,7 @@ export function LedgerGrid({ initialRows, initialEvents }: { initialRows: Ledger
                 <X {...ICON} aria-hidden />
               </button>
             </div>
-            <div className="flex-1 overflow-y-auto p-5">
+            <div className="flex-1 overflow-y-auto overscroll-contain p-5">
               <dl className="grid grid-cols-2 gap-x-6 gap-y-4 text-[14px] leading-5">
                 <div>
                   <dt className="text-ink-3">Hold</dt>

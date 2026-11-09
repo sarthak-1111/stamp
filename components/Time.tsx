@@ -1,20 +1,49 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useSyncExternalStore } from 'react';
 
-function fmtAbsolute(iso: string): string {
-  return new Date(iso).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' });
+/**
+ * Times are rendered twice: during server rendering and hydration they show a fixed UTC form (the
+ * server's clock and time zone are not the reader's), then, once hydrated, the reader's local time.
+ * Both renders are deterministic, so there is no hydration mismatch to suppress.
+ */
+const noop = () => () => {};
+export function useHydrated(): boolean {
+  return useSyncExternalStore(
+    noop,
+    () => true,
+    () => false,
+  );
+}
+
+const PARTS = { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' } as const;
+const utcFormat = new Intl.DateTimeFormat('en-US', { ...PARTS, timeZone: 'UTC' });
+let localFormat: Intl.DateTimeFormat | null = null;
+let localDetailed: Intl.DateTimeFormat | null = null;
+let relative: Intl.RelativeTimeFormat | null = null;
+
+export function fmtUtc(iso: string): string {
+  return `${utcFormat.format(new Date(iso))} UTC`;
+}
+export function fmtLocal(iso: string, seconds = false): string {
+  if (seconds) {
+    localDetailed ??= new Intl.DateTimeFormat(undefined, { ...PARTS, second: '2-digit' });
+    return localDetailed.format(new Date(iso));
+  }
+  localFormat ??= new Intl.DateTimeFormat(undefined, PARTS);
+  return localFormat.format(new Date(iso));
 }
 
 function fmtRelative(ms: number): string {
+  relative ??= new Intl.RelativeTimeFormat(undefined, { numeric: 'auto' });
   const s = Math.round(ms / 1000);
-  if (Math.abs(s) < 5) return 'just now';
-  if (Math.abs(s) < 60) return `${s}s ago`;
+  if (Math.abs(s) < 5) return relative.format(0, 'second');
+  if (Math.abs(s) < 60) return relative.format(-s, 'second');
   const m = Math.round(s / 60);
-  if (Math.abs(m) < 60) return `${m} min ago`;
+  if (Math.abs(m) < 60) return relative.format(-m, 'minute');
   const h = Math.round(m / 60);
-  if (Math.abs(h) < 48) return `${h} h ago`;
-  return `${Math.round(h / 24)} days ago`;
+  if (Math.abs(h) < 48) return relative.format(-h, 'hour');
+  return relative.format(-Math.round(h / 24), 'day');
 }
 
 function useNow(intervalMs: number) {
@@ -27,20 +56,22 @@ function useNow(intervalMs: number) {
   return now;
 }
 
-/** Absolute time on the server, relative ("12s ago") after hydration; exact time in the tooltip. */
+/** UTC while hydrating, then relative ("12 seconds ago") with the exact local time in the tooltip. */
 export function RelativeTime({ iso, className }: { iso: string; className?: string }) {
   const now = useNow(5000);
   return (
-    <time dateTime={iso} title={fmtAbsolute(iso)} className={className} suppressHydrationWarning>
-      {now === null ? fmtAbsolute(iso) : fmtRelative(now - Date.parse(iso))}
+    <time dateTime={iso} title={now === null ? fmtUtc(iso) : fmtLocal(iso, true)} className={className}>
+      {now === null ? fmtUtc(iso) : fmtRelative(now - Date.parse(iso))}
     </time>
   );
 }
 
+/** UTC while hydrating, then the reader's local date and time with seconds. */
 export function AbsoluteTime({ iso, className }: { iso: string; className?: string }) {
+  const hydrated = useHydrated();
   return (
-    <time dateTime={iso} className={className} suppressHydrationWarning>
-      {fmtAbsolute(iso)}
+    <time dateTime={iso} className={className}>
+      {hydrated ? fmtLocal(iso, true) : fmtUtc(iso)}
     </time>
   );
 }
@@ -56,7 +87,7 @@ function fmtDuration(ms: number): string {
   return `${m}:${String(s).padStart(2, '0')}`;
 }
 
-/** Live countdown to the auto-release time. */
+/** Live countdown to the auto-release time. Keep it out of aria-live regions: it changes every second. */
 export function Countdown({ until, prefix = 'Auto-releases in', onElapsed }: { until: string; prefix?: string; onElapsed?: () => void }) {
   const now = useNow(1000);
   const left = now === null ? null : Date.parse(until) - now;
@@ -64,10 +95,10 @@ export function Countdown({ until, prefix = 'Auto-releases in', onElapsed }: { u
     if (left !== null && left <= 0 && onElapsed) onElapsed();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [left !== null && left <= 0]);
-  if (left === null) return <span suppressHydrationWarning>{prefix} …</span>;
-  if (left <= 0) return <span>Window ended: releasing</span>;
+  if (left === null) return <span>{prefix} …</span>;
+  if (left <= 0) return <span>Window ended, releasing…</span>;
   return (
-    <span suppressHydrationWarning>
+    <span>
       {prefix} <span className="font-mono tabular-nums">{fmtDuration(left)}</span>
     </span>
   );

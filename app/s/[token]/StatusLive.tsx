@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { EASE } from '@/components/Motion';
 import { HoldStamp, Postmark, StateBadge, TONE_DOT } from '@/components/StateBadge';
-import { AbsoluteTime, Countdown, RelativeTime } from '@/components/Time';
+import { AbsoluteTime, Countdown, RelativeTime, useHydrated } from '@/components/Time';
 import { formatMoney, stampAmount } from '@/lib/money';
 import type { StatusView } from '@/lib/views';
 
@@ -25,13 +25,13 @@ function headline(v: StatusView): Head {
   }
   if (!h) return { title: 'Delivered on the free lane', sub: `No hold needed: ${name} added you to their free lane.`, mark: 'Delivered', tone: 'good' };
   const amount = stampAmount(h.amountCents, h.currency);
-  if (h.pendingOp === 'void') return { title: 'Releasing your hold', sub: 'PayPal is voiding the authorization.', mark: 'Releasing', tone: 'good' };
+  if (h.pendingOp === 'void') return { title: 'Releasing your hold…', sub: 'PayPal is voiding the authorization.', mark: 'Releasing', tone: 'good' };
   if (h.pendingOp === 'capture') return { title: 'Marked as spam', sub: `Capturing the hold for ${h.charityName}.`, mark: 'Captured', tone: 'donated' };
   switch (h.state) {
     case 'DRAFT':
       return { title: 'Waiting for your PayPal approval', sub: 'Your message is saved. It is delivered once you approve the hold in PayPal.', mark: 'Not yet', tone: 'neutral' };
     case 'APPROVED':
-      return { title: 'Approved, placing your hold', sub: 'PayPal is authorizing the hold.', mark: 'Approved', tone: 'neutral' };
+      return { title: 'Approved, placing your hold…', sub: 'PayPal is authorizing the hold.', mark: 'Approved', tone: 'neutral' };
     case 'AUTHORIZED':
       return { title: `Your ${amount} is held, not charged`, sub: `Real messages get it back. Your message is in ${name}’s inbox.`, mark: 'Held', tone: 'held' };
     case 'VOIDED':
@@ -52,8 +52,9 @@ function headline(v: StatusView): Head {
   }
 }
 
-function postmarkDate(iso: string): string {
-  return new Date(iso).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' });
+const POSTMARK_DATE = { day: 'numeric', month: 'short', year: 'numeric' } as const;
+function postmarkDate(iso: string, local: boolean): string {
+  return new Date(iso).toLocaleDateString('en-US', local ? POSTMARK_DATE : { ...POSTMARK_DATE, timeZone: 'UTC' });
 }
 
 export function StatusLive({ initial }: { initial: StatusView }) {
@@ -87,6 +88,7 @@ export function StatusLive({ initial }: { initial: StatusView }) {
     };
   }, [done, refresh]);
 
+  const hydrated = useHydrated();
   const h = view.hold;
   const head = headline(view);
   const lastAt = view.timeline.at(-1)?.at ?? view.createdAt;
@@ -95,16 +97,18 @@ export function StatusLive({ initial }: { initial: StatusView }) {
     <article aria-labelledby="status-title">
       <div className="flex flex-col-reverse gap-8 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0">
-          <p className="text-[14px] leading-5 text-ink-3">
+          <p className="text-[14px] leading-5 break-words text-ink-3">
             To <span className="font-mono">@{view.recipient.handle}</span> · {view.subject}
           </p>
           <h1 id="status-title" className="mt-3 text-[32px] leading-[1.15] font-medium tracking-[-0.02em] text-balance sm:text-[40px]">
             {head.title}
           </h1>
           <p className="mt-3 max-w-xl text-[17px] leading-7 text-ink-2">{head.sub}</p>
-          <div className="mt-5 flex flex-wrap items-center gap-3" aria-live="polite">
+          <div className="mt-5 flex flex-wrap items-center gap-3">
             {h ? <HoldStamp cents={h.amountCents} currency={h.currency} /> : null}
-            {h ? <StateBadge tone={h.tone} label={h.stateLabel} live={!done} /> : <StateBadge tone={head.tone} label={head.mark} live={!done} />}
+            <span role="status">
+              {h ? <StateBadge tone={h.tone} label={h.stateLabel} live={!done} /> : <StateBadge tone={head.tone} label={head.mark} live={!done} />}
+            </span>
             {h?.state === 'AUTHORIZED' && h.releaseAt && !h.pendingOp ? (
               <span className="font-mono text-[13px] text-ink-3">
                 <Countdown until={h.releaseAt} onElapsed={refresh} />
@@ -121,7 +125,7 @@ export function StatusLive({ initial }: { initial: StatusView }) {
             exit={{ opacity: 0, transition: { duration: 0.15 } }}
             transition={{ duration: 0.35, ease: EASE }}
           >
-            <Postmark id="status-postmark" tone={head.tone} top={h ? `${stampAmount(h.amountCents, h.currency)} hold` : 'No hold'} main={head.mark} bottom="Stamp sandbox" date={postmarkDate(lastAt)} />
+            <Postmark id="status-postmark" tone={head.tone} top={h ? `${stampAmount(h.amountCents, h.currency)} hold` : 'No hold'} main={head.mark} bottom="Stamp sandbox" date={postmarkDate(lastAt, hydrated)} />
           </m.div>
         </AnimatePresence>
       </div>
@@ -156,7 +160,7 @@ export function StatusLive({ initial }: { initial: StatusView }) {
           <h2 id="reply-title" className="text-[14px] leading-5 text-ink-3">
             Reply from {view.recipient.displayName}
           </h2>
-          <p className="mt-2 text-[16px] leading-7 whitespace-pre-wrap">{view.replyText}</p>
+          <p className="mt-2 text-[16px] leading-7 break-words whitespace-pre-wrap">{view.replyText}</p>
         </section>
       ) : null}
 
@@ -200,7 +204,9 @@ export function StatusLive({ initial }: { initial: StatusView }) {
             <CheckCircle {...ICON} aria-hidden /> Checked with PayPal <RelativeTime iso={h.lastVerifiedAt} />
           </span>
         ) : null}
-        {error ? <span className="text-bad">Could not refresh just now, retrying</span> : null}
+        <span role="status" className="text-bad">
+          {error ? 'Could not refresh just now, retrying…' : ''}
+        </span>
         <span>Keep this page’s link to check back later</span>
       </p>
     </article>

@@ -15,9 +15,11 @@ export function StampMark({ size = 22 }: { size?: number }) {
 
 export function Brand() {
   return (
-    <Link href="/" className="inline-flex items-center gap-2.5 rounded-md text-ink no-underline">
+    <Link href="/" className="inline-flex items-center gap-2.5 rounded-md text-ink no-underline transition-opacity hover:opacity-75">
       <StampMark />
-      <span className="text-[17px] font-semibold tracking-[-0.01em]">Stamp</span>
+      <span translate="no" className="text-[17px] font-semibold tracking-[-0.01em]">
+        Stamp
+      </span>
     </Link>
   );
 }

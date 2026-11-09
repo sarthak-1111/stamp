@@ -2,12 +2,20 @@
 
 import { ArrowLeft } from '@phosphor-icons/react';
 import { useRouter } from 'next/navigation';
-import { useId, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 
 type Props = { handle: string; amountLabel: string; firstName: string; hasFreeLane: boolean };
 type Mode = 'hold' | 'request';
 
 const ICON = { size: 16, weight: 'bold' } as const;
+/** Error keys from the API, in form order, mapped to the id suffix of their control. */
+const FIELD_ID: Array<[string, string]> = [
+  ['senderName', 'name'],
+  ['senderEmail', 'email'],
+  ['subject', 'subject'],
+  ['body', 'body'],
+  ['note', 'note'],
+];
 
 export function SendForm({ handle, amountLabel, firstName, hasFreeLane }: Props) {
   const uid = useId();
@@ -22,12 +30,39 @@ export function SendForm({ handle, amountLabel, firstName, hasFreeLane }: Props)
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [formError, setFormError] = useState<string | null>(null);
   const [phase, setPhase] = useState<'idle' | 'sending' | 'redirecting'>('idle');
+  const headingRef = useRef<HTMLHeadingElement>(null);
+  const modeChanged = useRef(false);
 
   function switchMode(next: Mode) {
     setMode(next);
     setErrors({});
     setFormError(null);
+    modeChanged.current = true;
   }
+
+  // The button that switched modes is gone after the switch; move focus to the form's heading instead.
+  useEffect(() => {
+    if (modeChanged.current) headingRef.current?.focus();
+    modeChanged.current = false;
+  }, [mode]);
+
+  // After a refused submit, put the cursor in the first field that needs fixing.
+  useEffect(() => {
+    const first = FIELD_ID.find(([k]) => errors[k]);
+    if (first) document.getElementById(`${uid}-${first[1]}`)?.focus();
+  }, [errors, uid]);
+
+  // Don't lose a written message to a stray link or Back. Not while handing over to PayPal.
+  const dirty = Boolean(subject.trim() || body.trim() || note.trim());
+  useEffect(() => {
+    if (!dirty || phase !== 'idle') return;
+    const warn = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = '';
+    };
+    window.addEventListener('beforeunload', warn);
+    return () => window.removeEventListener('beforeunload', warn);
+  }, [dirty, phase]);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -58,12 +93,15 @@ export function SendForm({ handle, amountLabel, firstName, hasFreeLane }: Props)
       if (j.approveUrl) window.location.assign(j.approveUrl);
       else router.push(j.statusUrl);
     } catch {
-      setFormError('Network error. Nothing was held or charged. Please try again');
+      setFormError('Network error. Nothing was held or charged. Please try again.');
       setPhase('idle');
     }
   }
 
-  const err = (k: string) => (errors[k] ? { 'aria-invalid': true as const, 'aria-describedby': `${uid}-${k}-err` } : {});
+  const err = (k: string, extra?: string) => {
+    const ids = [errors[k] ? `${uid}-${k}-err` : '', extra ?? ''].filter(Boolean).join(' ');
+    return { ...(errors[k] ? { 'aria-invalid': true as const } : {}), ...(ids ? { 'aria-describedby': ids } : {}) };
+  };
   const ErrorText = ({ k }: { k: string }) =>
     errors[k] ? (
       <p id={`${uid}-${k}-err`} className="mt-1.5 text-[14px] text-bad">
@@ -83,7 +121,7 @@ export function SendForm({ handle, amountLabel, firstName, hasFreeLane }: Props)
             Write with a hold instead
           </button>
         ) : null}
-        <h2 id="compose" className="text-[20px] leading-7 font-medium">
+        <h2 id="compose" ref={headingRef} tabIndex={-1} className="rounded-md text-[20px] leading-7 font-medium">
           {mode === 'hold' ? 'Your message' : 'Ask for a free pass'}
         </h2>
         {mode === 'request' ? (
@@ -104,7 +142,7 @@ export function SendForm({ handle, amountLabel, firstName, hasFreeLane }: Props)
           <label htmlFor={`${uid}-name`} className={label}>
             Your name
           </label>
-          <input id={`${uid}-name`} className="field mt-1.5" autoComplete="name" value={senderName} onChange={(e) => setSenderName(e.target.value)} maxLength={80} {...err('senderName')} />
+          <input id={`${uid}-name`} name="name" className="field mt-1.5" autoComplete="name" value={senderName} onChange={(e) => setSenderName(e.target.value)} maxLength={80} {...err('senderName')} />
           <ErrorText k="senderName" />
         </div>
         <div>
@@ -113,6 +151,7 @@ export function SendForm({ handle, amountLabel, firstName, hasFreeLane }: Props)
           </label>
           <input
             id={`${uid}-email`}
+            name="email"
             className="field mt-1.5"
             type="email"
             inputMode="email"
@@ -133,7 +172,7 @@ export function SendForm({ handle, amountLabel, firstName, hasFreeLane }: Props)
             <label htmlFor={`${uid}-subject`} className={label}>
               Subject
             </label>
-            <input id={`${uid}-subject`} className="field mt-1.5" value={subject} onChange={(e) => setSubject(e.target.value)} maxLength={120} {...err('subject')} />
+            <input id={`${uid}-subject`} name="subject" autoComplete="off" className="field mt-1.5" value={subject} onChange={(e) => setSubject(e.target.value)} maxLength={120} {...err('subject')} />
             <ErrorText k="subject" />
           </div>
           <div>
@@ -141,18 +180,20 @@ export function SendForm({ handle, amountLabel, firstName, hasFreeLane }: Props)
               <label htmlFor={`${uid}-body`} className={label}>
                 Message
               </label>
-              <span className={`font-mono text-[12px] tabular-nums ${body.length > 2000 ? 'text-bad' : 'text-ink-3'}`} aria-live="polite">
+              <span id={`${uid}-body-count`} className={`font-mono text-[12px] tabular-nums ${body.length > 2000 ? 'text-bad' : 'text-ink-3'}`}>
                 {body.length} / 2000
               </span>
             </div>
             <textarea
               id={`${uid}-body`}
+              name="message"
+              autoComplete="off"
               className="field mt-1.5 min-h-[176px]"
               rows={7}
               value={body}
               onChange={(e) => setBody(e.target.value)}
-              placeholder={`Who you are, what you would like from ${firstName}, and why them`}
-              {...err('body')}
+              placeholder={`Who you are, what you would like from ${firstName}, and why them…`}
+              {...err('body', `${uid}-body-count`)}
             />
             <ErrorText k="body" />
           </div>
@@ -163,18 +204,20 @@ export function SendForm({ handle, amountLabel, firstName, hasFreeLane }: Props)
             <label htmlFor={`${uid}-note`} className={label}>
               Why a free pass
             </label>
-            <span className={`font-mono text-[12px] tabular-nums ${note.length > 280 ? 'text-bad' : 'text-ink-3'}`} aria-live="polite">
+            <span id={`${uid}-note-count`} className={`font-mono text-[12px] tabular-nums ${note.length > 280 ? 'text-bad' : 'text-ink-3'}`}>
               {note.length} / 280
             </span>
           </div>
           <textarea
             id={`${uid}-note`}
+            name="note"
+            autoComplete="off"
             className="field mt-1.5"
             rows={4}
             value={note}
             onChange={(e) => setNote(e.target.value)}
-            placeholder="For example: I am a student and cannot use PayPal yet"
-            {...err('note')}
+            placeholder="For example: I am a student and cannot use PayPal yet…"
+            {...err('note', `${uid}-note-count`)}
           />
           <ErrorText k="note" />
         </div>
