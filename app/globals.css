@@ -1,0 +1,263 @@
+@import 'tailwindcss';
+
+/* ------------------------------------------------------------------ tokens */
+:root {
+  --paper: #f6f1e7;
+  --paper-2: #eee6d6;
+  --card: #fffdf8;
+  --ink: #1b2232;
+  --ink-2: #4a5266;
+  --ink-3: #6b7285;
+  --line: #e0d6c2;
+  --stamp: #c8402a;
+  --stamp-ink: #a3321f;
+  --stamp-soft: #f7e1da;
+  --held: #94590a;
+  --held-bg: #fbecd2;
+  --good: #1f6b4b;
+  --good-bg: #dcefe3;
+  --donated: #5a3fae;
+  --donated-bg: #ebe5fa;
+  --bad: #b42318;
+  --bad-bg: #fde6e3;
+  --focus: #2563eb;
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --paper: #10141b;
+    --paper-2: #161b24;
+    --card: #1a202b;
+    --ink: #efe8da;
+    --ink-2: #b4bac7;
+    --ink-3: #8c93a3;
+    --line: #2c3342;
+    --stamp: #e8644b;
+    --stamp-ink: #f08a73;
+    --stamp-soft: #3a1d17;
+    --held: #f2b85a;
+    --held-bg: #3a2b10;
+    --good: #67cf9c;
+    --good-bg: #133423;
+    --donated: #b5a1f5;
+    --donated-bg: #2a2147;
+    --bad: #f3988c;
+    --bad-bg: #3d1714;
+    --focus: #7aa2ff;
+    color-scheme: dark;
+  }
+}
+
+@theme inline {
+  --font-display: var(--font-fraunces), ui-serif, Georgia, serif;
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono: var(--font-jetbrains), ui-monospace, SFMono-Regular, Menlo, monospace;
+  --color-paper: var(--paper);
+  --color-paper-2: var(--paper-2);
+  --color-card: var(--card);
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-ink-3: var(--ink-3);
+  --color-line: var(--line);
+  --color-stamp: var(--stamp);
+  --color-stamp-ink: var(--stamp-ink);
+  --color-stamp-soft: var(--stamp-soft);
+  --color-held: var(--held);
+  --color-held-bg: var(--held-bg);
+  --color-good: var(--good);
+  --color-good-bg: var(--good-bg);
+  --color-donated: var(--donated);
+  --color-donated-bg: var(--donated-bg);
+  --color-bad: var(--bad);
+  --color-bad-bg: var(--bad-bg);
+}
+
+/* ------------------------------------------------------------------ base */
+html {
+  -webkit-text-size-adjust: 100%;
+}
+body {
+  background: var(--paper);
+  color: var(--ink);
+}
+::selection {
+  background: var(--stamp-soft);
+}
+:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+.skip-link {
+  position: absolute;
+  left: 12px;
+  top: -48px;
+  z-index: 50;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: var(--ink);
+  color: var(--paper);
+}
+.skip-link:focus {
+  top: 12px;
+}
+
+/* A postage stamp: perforated edge via two background layers (holes show the page behind). */
+.stamp-edge {
+  --r: 7px;
+  padding: calc(2 * var(--r) + 6px);
+  background:
+    radial-gradient(var(--r), #0000 97%, var(--card)) round calc(-1.5 * var(--r)) calc(-1.5 * var(--r)) / calc(3 * var(--r)) calc(3 * var(--r)),
+    linear-gradient(var(--card) 0 0) no-repeat 50% / calc(100% - 3 * var(--r)) calc(100% - 3 * var(--r));
+  filter: drop-shadow(0 1px 0 var(--line)) drop-shadow(0 10px 24px rgb(27 34 50 / 0.08));
+}
+.stamp-edge-sm {
+  --r: 3px;
+  padding: calc(2 * var(--r) + 2px);
+  background:
+    radial-gradient(var(--r), #0000 97%, var(--stamp)) round calc(-1.5 * var(--r)) calc(-1.5 * var(--r)) / calc(3 * var(--r)) calc(3 * var(--r)),
+    linear-gradient(var(--stamp) 0 0) no-repeat 50% / calc(100% - 3 * var(--r)) calc(100% - 3 * var(--r));
+}
+
+/* Postmark ring used for big state badges. */
+.postmark {
+  border: 2px solid currentColor;
+  outline: 1px solid currentColor;
+  outline-offset: 3px;
+  border-radius: 9999px;
+}
+
+.card {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+}
+
+.field {
+  width: 100%;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: var(--card);
+  padding: 10px 12px;
+  color: var(--ink);
+  font-size: 16px; /* no zoom on iOS */
+  line-height: 1.4;
+}
+.field:hover {
+  border-color: color-mix(in oklab, var(--line), var(--ink) 25%);
+}
+.field[aria-invalid='true'] {
+  border-color: var(--bad);
+}
+.field::placeholder {
+  color: var(--ink-3);
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 10px 18px;
+  border-radius: 9999px;
+  font-weight: 600;
+  font-size: 15px;
+  transition:
+    background-color 120ms ease,
+    transform 120ms ease,
+    border-color 120ms ease;
+  border: 1px solid transparent;
+  cursor: pointer;
+  text-decoration: none;
+}
+.btn:active {
+  transform: translateY(1px);
+}
+.btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+.btn-primary {
+  background: var(--stamp);
+  color: #fff;
+}
+.btn-primary:hover:not(:disabled) {
+  background: var(--stamp-ink);
+}
+.btn-ink {
+  background: var(--ink);
+  color: var(--paper);
+}
+.btn-ink:hover:not(:disabled) {
+  background: color-mix(in oklab, var(--ink), var(--paper) 15%);
+}
+.btn-ghost {
+  background: transparent;
+  color: var(--ink);
+  border-color: var(--line);
+}
+.btn-ghost:hover:not(:disabled) {
+  background: var(--paper-2);
+}
+.btn-danger {
+  background: transparent;
+  color: var(--bad);
+  border-color: color-mix(in oklab, var(--bad), transparent 55%);
+}
+.btn-danger:hover:not(:disabled) {
+  background: var(--bad-bg);
+}
+.btn-danger-solid {
+  background: var(--bad);
+  color: #fff;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border-radius: 9999px;
+  padding: 3px 10px;
+  font-size: 13px;
+  line-height: 1.4;
+  border: 1px solid var(--line);
+  background: var(--paper);
+  color: var(--ink-2);
+}
+
+.eyebrow {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+dialog::backdrop {
+  background: rgb(16 20 27 / 0.55);
+  backdrop-filter: blur(2px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+@keyframes pulse-dot {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+.pulse {
+  animation: pulse-dot 1.6s ease-in-out infinite;
+}
