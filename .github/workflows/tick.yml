@@ -1,0 +1,22 @@
+# The release timer. Every 5 minutes it asks the deployed Stamp to do whatever is already due:
+# release holds whose window has ended and finish in-flight PayPal operations. Pages people are
+# looking at also do this lazily, so a late or skipped run only delays a release by minutes.
+# Set the repository variable STAMP_URL and the secret CRON_SECRET (same value as on the host).
+name: Release timer
+on:
+  schedule:
+    - cron: '*/5 * * * *'
+  workflow_dispatch:
+permissions: {}
+jobs:
+  tick:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Call /api/cron/tick
+        env:
+          STAMP_URL: ${{ vars.STAMP_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          if [ -z "$STAMP_URL" ]; then echo "STAMP_URL is not set, skipping"; exit 0; fi
+          curl -fsS -m 60 -X POST "$STAMP_URL/api/cron/tick" -H "Authorization: Bearer $CRON_SECRET"

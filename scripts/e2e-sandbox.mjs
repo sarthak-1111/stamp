@@ -314,8 +314,15 @@ for (const s of SCENARIOS) {
   check(`${s.key}: ends ${s.expect}`, c?.hold?.state === s.expect, c?.hold?.state);
   const writes = calls.filter((x) => !/\.get|\.show|verify/.test(x.call));
   check(`${s.key}: every PayPal write carried a PayPal-Request-Id`, writes.length > 0 && writes.every((x) => x.hasRequestId), writes.filter((x) => !x.hasRequestId));
-  const actors = new Set(transitions.filter((t) => /→ (VOIDED|CAPTURED|DONATED)$/.test(t.change)).map((t) => t.actor));
-  check(`${s.key}: money moved only by the recipient, the timer or the reconciler finishing their action`, [...actors].every((a) => ['recipient', 'timer', 'reconciler', 'system', 'webhook'].includes(a)), [...actors]);
+  // Releasing or capturing is started only by the recipient or the timer; DONATED is recorded when PayPal
+  // reports the payout succeeded. The AI never appears as an actor.
+  const starters = new Set(transitions.filter((t) => /→ (VOIDED|CAPTURED)$/.test(t.change)).map((t) => t.actor));
+  const donors = new Set(transitions.filter((t) => /→ DONATED$/.test(t.change)).map((t) => t.actor));
+  check(
+    `${s.key}: only the recipient or the timer released or captured it, and PayPal confirmed any donation`,
+    [...starters].every((a) => a === 'recipient' || a === 'timer') && [...donors].every((a) => a === 'paypal') && !transitions.some((t) => t.actor === 'ai'),
+    { starters: [...starters], donors: [...donors] },
+  );
 }
 const voids = results.reply.paypalCalls.filter((c) => /void/.test(c.call));
 check('reply: exactly one void call reached PayPal despite the double submit', voids.length === 1, voids.length);
