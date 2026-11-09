@@ -70,7 +70,7 @@ export function Postmark({ tone, top, main, bottom, date, id }: { tone: Tone; to
           {bottom.toUpperCase()}
         </textPath>
       </text>
-      <text x="62" y={date ? 64 : 67} textAnchor="middle" fill="currentColor" fontSize={main.length > 8 ? 12 : 15} fontWeight="700" letterSpacing="0.8" className="font-sans">
+      <text x="62" y={date ? 64 : 67} textAnchor="middle" fill="currentColor" fontSize={main.length > 9 ? 10 : main.length > 7 ? 11.5 : 15} fontWeight="700" letterSpacing="0.8" className="font-sans">
         {main.toUpperCase()}
       </text>
       {date ? (

@@ -31,6 +31,8 @@ export function clientIpHash(headers: Headers): string {
 
 export const LIMITS = {
   send: { limit: 6, windowSeconds: 600 },
+  request: { limit: 3, windowSeconds: 3600 },
+  api: { limit: 20, windowSeconds: 600 },
   sendPerPage: { limit: 30, windowSeconds: 3600 },
   setup: { limit: 5, windowSeconds: 3600 },
   status: { limit: 120, windowSeconds: 60 },

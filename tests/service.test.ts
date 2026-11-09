@@ -150,7 +150,7 @@ describe('recipient actions', () => {
   it('Spam captures, then pays the net amount to the CHARITY, never the recipient', async () => {
     const { msg, holdId } = await sendAndAuthorize();
     const rid = (await getHold(holdId))!.recipientId;
-    await recipientDecide(rid, msg.id, 'spam', { confirm: true });
+    await recipientDecide(rid, msg.id, 'spam', { confirm: true, reason: 'bulk' });
     let hold = await getHold(holdId);
     expect(hold?.state).toBe('CAPTURED');
     expect(hold?.feeCents).toBe(66);
@@ -171,14 +171,14 @@ describe('recipient actions', () => {
 
   it('a decision on another recipient’s message is refused', async () => {
     const { msg } = await sendAndAuthorize();
-    await expectStampError(recipientDecide('rcp_someone_else', msg.id, 'spam', { confirm: true }), 'not_found');
+    await expectStampError(recipientDecide('rcp_someone_else', msg.id, 'spam', { confirm: true, reason: 'bulk' }), 'not_found');
   });
 
   it('cannot decide twice', async () => {
     const { msg, holdId } = await sendAndAuthorize();
     const rid = (await getHold(holdId))!.recipientId;
     await recipientDecide(rid, msg.id, 'worth_it', {});
-    await expectStampError(recipientDecide(rid, msg.id, 'spam', { confirm: true }), 'already_decided');
+    await expectStampError(recipientDecide(rid, msg.id, 'spam', { confirm: true, reason: 'bulk' }), 'already_decided');
     expect(paypal.captures.size).toBe(0);
   });
 
@@ -187,7 +187,7 @@ describe('recipient actions', () => {
     const rid = (await getHold(holdId))!.recipientId;
     const results = await Promise.allSettled([
       recipientDecide(rid, msg.id, 'reply', { replyText: 'hi' }),
-      recipientDecide(rid, msg.id, 'spam', { confirm: true }),
+      recipientDecide(rid, msg.id, 'spam', { confirm: true, reason: 'bulk' }),
     ]);
     expect(results.filter((r) => r.status === 'fulfilled')).toHaveLength(1);
     const writes = paypal.writes().filter((c) => c.path.includes('/v2/payments/authorizations/'));
@@ -212,7 +212,7 @@ describe('timer', () => {
     const { msg, holdId } = await sendAndAuthorize();
     const rid = (await getHold(holdId))!.recipientId;
     await expireWindow(db, holdId);
-    await expectStampError(recipientDecide(rid, msg.id, 'spam', { confirm: true }), 'window_ended');
+    await expectStampError(recipientDecide(rid, msg.id, 'spam', { confirm: true, reason: 'bulk' }), 'window_ended');
     expect(paypal.captures.size).toBe(0);
   });
 

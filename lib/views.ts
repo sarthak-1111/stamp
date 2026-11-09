@@ -3,7 +3,8 @@ import { getCharity, releaseOptions } from '@/lib/config';
 import { getDb, toIso, toJsonArray, type Row } from '@/lib/db';
 import { OUTCOME_COPY, STATE_COPY, type HoldState, type Outcome } from '@/lib/holds/machine';
 import { listEvents, mapHold, type Hold, type HoldEventRow } from '@/lib/holds/repo';
-import { mapMessage, type Message } from '@/lib/messages';
+import { RETURN_RATE_MIN_DECIDED, SPAM_REASON_LABEL, type SpamReason, type Via } from '@/lib/copy';
+import { mapMessage, type Lane, type Message } from '@/lib/messages';
 import { formatMoney } from '@/lib/money';
 import type { Recipient } from '@/lib/recipients';
 import { getRecipientByHandle } from '@/lib/recipients';
@@ -30,12 +31,35 @@ export type PublicPage = {
   releaseLabel: string;
   charity: { name: string; blurb: string } | null;
   hasFreeLane: boolean;
+  returns: ReturnStats;
 };
+
+/**
+ * How this recipient has treated holds so far. Shown publicly on their page so senders can judge them
+ * before paying. Returned = released after a reply, Worth it or the timer. Kept = marked spam (donated).
+ */
+export type ReturnStats = { returned: number; kept: number; decided: number; rate: number | null };
+
+export async function getReturnStats(recipientId: string): Promise<ReturnStats> {
+  const db = await getDb();
+  const rows = await db.query<{ returned: number; kept: number }>(
+    `SELECT count(*) FILTER (WHERE h.state = 'VOIDED' AND h.outcome IN ('reply', 'worth_it', 'auto_release'))::int AS returned,
+            count(*) FILTER (WHERE m.decision = 'spam')::int AS kept
+       FROM holds h JOIN messages m ON m.id = h.message_id
+      WHERE h.recipient_id = $1`,
+    [recipientId],
+  );
+  const returned = Number(rows[0]?.returned ?? 0);
+  const kept = Number(rows[0]?.kept ?? 0);
+  const decided = returned + kept;
+  return { returned, kept, decided, rate: decided >= RETURN_RATE_MIN_DECIDED ? Math.round((returned / decided) * 100) : null };
+}
 
 export async function getPublicPage(handle: string): Promise<PublicPage | null> {
   const r = await getRecipientByHandle(handle);
   if (!r) return null;
   const charity = getCharity(r.charityId);
+  const returns = await getReturnStats(r.id);
   return {
     handle: r.handle,
     displayName: r.displayName,
@@ -47,6 +71,7 @@ export async function getPublicPage(handle: string): Promise<PublicPage | null> 
     releaseLabel: windowLabel(r.releaseMinutes),
     charity: charity ? { name: charity.name, blurb: charity.blurb } : null,
     hasFreeLane: r.freeLane.length > 0,
+    returns,
   };
 }
 
@@ -106,7 +131,7 @@ export function shortName(name: string | null): string | null {
 
 export type TimelineItem = { at: string; title: string; detail?: string; tone: 'neutral' | 'held' | 'good' | 'donated' | 'bad' };
 
-export function buildTimeline(events: HoldEventRow[], h: Hold, recipientName: string): TimelineItem[] {
+export function buildTimeline(events: HoldEventRow[], h: Hold, recipientName: string, reason: SpamReason | null = null): TimelineItem[] {
   const amount = formatMoney(h.amountCents, h.currency);
   const charity = getCharity(h.charityId)?.name ?? 'the charity';
   const items: TimelineItem[] = [];
@@ -131,7 +156,7 @@ export function buildTimeline(events: HoldEventRow[], h: Hold, recipientName: st
       items.push({
         at: e.at,
         title: outcome === 'spam' ? `Marked as spam. ${amount} captured for ${charity}.` : `${amount} captured at PayPal.`,
-        detail: `${recipientName} receives nothing.${fee}`,
+        detail: `${reason ? `Reason given: ${SPAM_REASON_LABEL[reason]}. ` : ''}${recipientName} receives nothing.${fee}`,
         tone: 'donated',
       });
     } else if (key === 'CAPTURED->DONATED') {
@@ -148,13 +173,14 @@ export function buildTimeline(events: HoldEventRow[], h: Hold, recipientName: st
 
 export type StatusView = {
   token: string;
-  lane: 'hold' | 'free';
+  lane: Lane;
   subject: string;
   createdAt: string;
   recipient: { handle: string; displayName: string };
   replyText: string | null;
   decidedAt: string | null;
   decision: Message['decision'];
+  decisionReason: string | null;
   hold: HoldView | null;
   approveUrl: string | null;
   timeline: TimelineItem[];
@@ -172,8 +198,16 @@ export async function getStatusView(token: string): Promise<StatusView | null> {
   const recipientName = String(row.r_name);
   const holdRows = await db.query('SELECT * FROM holds WHERE message_id = $1', [msg.id]);
   const hold = holdRows[0] ? mapHold(holdRows[0]) : null;
-  const timeline = hold ? buildTimeline(await listEvents(hold.id), hold, recipientName) : [{ at: msg.createdAt, title: 'Delivered through the free lane. No hold needed.', tone: 'good' as const }];
-  if (msg.decision === 'reply' && msg.decidedAt && !hold) timeline.push({ at: msg.decidedAt, title: `${recipientName} replied`, tone: 'good' });
+  let timeline: TimelineItem[];
+  if (hold) timeline = buildTimeline(await listEvents(hold.id), hold, recipientName, msg.decisionReason);
+  else if (msg.lane === 'request') {
+    timeline = [{ at: msg.createdAt, title: 'Free pass requested. No hold, no charge.', tone: 'neutral' }];
+    if (msg.decision === 'grant' && msg.decidedAt) timeline.push({ at: msg.decidedAt, title: `${recipientName} granted your free pass`, detail: 'Write from the same address and your message skips the hold.', tone: 'good' });
+    if (msg.decision === 'decline' && msg.decidedAt) timeline.push({ at: msg.decidedAt, title: `${recipientName} did not grant a free pass`, detail: 'You can still write with a refundable hold.', tone: 'neutral' });
+  } else {
+    timeline = [{ at: msg.createdAt, title: 'Delivered through the free lane. No hold needed.', tone: 'good' }];
+    if (msg.decision === 'reply' && msg.decidedAt) timeline.push({ at: msg.decidedAt, title: `${recipientName} replied`, tone: 'good' });
+  }
   return {
     token,
     lane: msg.lane,
@@ -183,6 +217,7 @@ export async function getStatusView(token: string): Promise<StatusView | null> {
     replyText: msg.decision === 'reply' ? msg.replyText : null,
     decidedAt: msg.decidedAt,
     decision: msg.decision,
+    decisionReason: msg.decisionReason ? SPAM_REASON_LABEL[msg.decisionReason] : null,
     hold: hold ? holdView(hold) : null,
     approveUrl: hold?.state === 'DRAFT' ? hold.approveUrl : null,
     timeline,
@@ -192,7 +227,7 @@ export async function getStatusView(token: string): Promise<StatusView | null> {
 export type InboxCard = {
   messageId: string;
   holdId: string | null;
-  lane: 'hold' | 'free';
+  lane: Lane;
   senderName: string;
   senderEmail: string;
   subject: string;
@@ -200,8 +235,11 @@ export type InboxCard = {
   createdAt: string;
   deliveredAt: string | null;
   decision: Message['decision'];
+  decisionReason: SpamReason | null;
   decidedAt: string | null;
   replyText: string | null;
+  via: Via;
+  agentName: string | null;
   hold: HoldView | null;
   triage: Omit<Triage, 'messageId' | 'modelStartedAt'> | null;
 };
@@ -209,7 +247,8 @@ export type InboxCard = {
 export type InboxView = {
   recipient: Recipient & { charityName: string; releaseLabel: string };
   cards: InboxCard[];
-  stats: { heldCents: number; heldCount: number; releasedCount: number; donatedCents: number; spamCount: number };
+  stats: { heldCents: number; heldCount: number; releasedCount: number; donatedCents: number; spamCount: number; openRequests: number };
+  returns: ReturnStats;
 };
 
 function mapTriageRow(r: Row): InboxCard['triage'] {
@@ -267,13 +306,23 @@ export async function getInboxView(recipient: Recipient): Promise<InboxView> {
       createdAt: m.createdAt,
       deliveredAt: m.deliveredAt,
       decision: m.decision,
+      decisionReason: m.decisionReason,
       decidedAt: m.decidedAt,
       replyText: m.replyText,
+      via: m.via,
+      agentName: m.agentName,
       hold: h ? holdView(h) : null,
       triage: mapTriageRow(r),
     };
   });
-  const stats = { heldCents: 0, heldCount: 0, releasedCount: 0, donatedCents: 0, spamCount: 0 };
+  const stats = {
+    heldCents: 0,
+    heldCount: 0,
+    releasedCount: 0,
+    donatedCents: 0,
+    spamCount: 0,
+    openRequests: cards.filter((c) => c.lane === 'request' && !c.decision).length,
+  };
   for (const h of holds.values()) {
     if (h.state === 'AUTHORIZED') {
       stats.heldCents += h.amountCents;
@@ -287,6 +336,7 @@ export async function getInboxView(recipient: Recipient): Promise<InboxView> {
     recipient: { ...recipient, charityName: getCharity(recipient.charityId)?.name ?? 'the charity', releaseLabel: windowLabel(recipient.releaseMinutes) },
     cards,
     stats,
+    returns: await getReturnStats(recipient.id),
   };
 }
 
@@ -294,7 +344,9 @@ export type LedgerRow = {
   holdId: string | null;
   messageId: string;
   receivedAt: string;
-  lane: 'hold' | 'free';
+  lane: Lane;
+  via: Via;
+  agentName: string | null;
   sender: string;
   payer: string | null;
   subject: string;
@@ -306,6 +358,7 @@ export type LedgerRow = {
   aiRisk: number | null;
   injection: boolean;
   decision: string | null;
+  reason: string | null;
   decidedBy: string | null;
   agreement: 'agree' | 'differ' | null;
   outcome: string | null;
@@ -330,8 +383,8 @@ function agreement(rec: string | null, decision: string | null): 'agree' | 'diff
 export async function getLedger(recipient: Recipient): Promise<{ rows: LedgerRow[]; events: LedgerEvent[] }> {
   const db = await getDb();
   const rows = await db.query(
-    `SELECT m.id AS m_id, m.lane, m.sender_name, m.sender_email, m.subject, m.delivered_at, m.created_at AS m_created,
-            m.decision, h.*, t.source AS t_source, t.recommendation AS t_rec, t.fit_score AS t_fit, t.risk_score AS t_risk, t.injection AS t_injection
+    `SELECT m.id AS m_id, m.lane, m.via, m.agent_name, m.sender_name, m.sender_email, m.subject, m.delivered_at, m.created_at AS m_created,
+            m.decision, m.decision_reason, h.*, t.source AS t_source, t.recommendation AS t_rec, t.fit_score AS t_fit, t.risk_score AS t_risk, t.injection AS t_injection
        FROM messages m
        LEFT JOIN holds h ON h.message_id = m.id
        LEFT JOIN triage t ON t.message_id = m.id
@@ -347,20 +400,23 @@ export async function getLedger(recipient: Recipient): Promise<{ rows: LedgerRow
       holdId: h?.id ?? null,
       messageId: String(r.m_id),
       receivedAt: toIso(r.delivered_at) ?? toIso(r.m_created) ?? '',
-      lane: r.lane as 'hold' | 'free',
+      lane: r.lane as Lane,
+      via: ((r.via as Via | null) ?? 'web') as Via,
+      agentName: r.agent_name ? String(r.agent_name) : null,
       sender: `${String(r.sender_name)} <${String(r.sender_email)}>`,
       payer: shortName(h?.payerName ?? null),
       subject: String(r.subject),
       amount: h ? h.amountCents / 100 : null,
-      state: h ? h.state : r.delivered_at ? 'FREE LANE' : 'NOT SENT',
+      state: h ? h.state : r.lane === 'request' ? 'FREE PASS' : r.delivered_at ? 'FREE LANE' : 'NOT SENT',
       aiSource: r.t_source ? String(r.t_source) : null,
       aiRecommendation: r.t_rec ? String(r.t_rec) : null,
       aiFit: r.t_fit === null || r.t_fit === undefined ? null : Number(r.t_fit),
       aiRisk: r.t_risk === null || r.t_risk === undefined ? null : Number(r.t_risk),
       injection: Boolean(r.t_injection),
       decision,
+      reason: r.decision_reason ? SPAM_REASON_LABEL[r.decision_reason as SpamReason] : null,
       decidedBy: r.decision ? 'you' : h?.outcome === 'auto_release' ? 'timer' : null,
-      agreement: r.decision ? agreement(r.t_rec ? String(r.t_rec) : null, String(r.decision)) : null,
+      agreement: r.decision && r.lane !== 'request' ? agreement(r.t_rec ? String(r.t_rec) : null, String(r.decision)) : null,
       outcome: h?.outcome ? OUTCOME_COPY[h.outcome] : null,
       paypalFee: h?.feeCents === null || h?.feeCents === undefined ? null : h.feeCents / 100,
       donated: h?.donatedCents === null || h?.donatedCents === undefined ? null : h.donatedCents / 100,

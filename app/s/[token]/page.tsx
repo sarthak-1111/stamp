@@ -11,7 +11,7 @@ export default async function StatusPage({ params }: { params: Promise<{ token: 
   const view = await getStatusView(token);
   if (!view) notFound();
   return (
-    <div className="mx-auto max-w-3xl px-4 pt-10 sm:px-6">
+    <div className="rise mx-auto max-w-[880px] px-4 pt-10 sm:px-6 sm:pt-16">
       <StatusLive initial={view} />
     </div>
   );

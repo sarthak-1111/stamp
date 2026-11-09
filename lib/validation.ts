@@ -1,7 +1,8 @@
 import 'server-only';
 import { z } from 'zod';
 import { getCharity, HOLD_MAX_CENTS, HOLD_MIN_CENTS, releaseOptions } from '@/lib/config';
-import type { RecipientSettings } from '@/lib/recipients';
+import { SPAM_REASONS } from '@/lib/copy';
+import { FREE_LANE_MAX, type RecipientSettings } from '@/lib/recipients';
 import { cleanText } from '@/lib/sanitize';
 
 export const RESERVED_HANDLES = new Set(
@@ -63,7 +64,7 @@ export function parseSettings(raw: Record<string, unknown> | null): { ok: true; 
     if (!n) errors.freeLane = `"${entry.slice(0, 60)}" is not an email address or a domain like @example.org.`;
     else if (!freeLane.includes(n)) freeLane.push(n);
   }
-  if (freeLane.length > 20) errors.freeLane = 'Up to 20 free-lane entries.';
+  if (freeLane.length > FREE_LANE_MAX) errors.freeLane = `Up to ${FREE_LANE_MAX} free-lane entries.`;
 
   const releaseMinutes = Number(r.releaseMinutes);
   if (!releaseOptions().some((o) => o.minutes === releaseMinutes)) errors.releaseMinutes = 'Choose one of the listed windows.';
@@ -102,7 +103,29 @@ export function parseSend(raw: Record<string, unknown> | null): { ok: true; data
 }
 
 export const ActionSchema = z.strictObject({
-  action: z.enum(['reply', 'worth_it', 'spam']),
+  action: z.enum(['reply', 'worth_it', 'spam', 'grant', 'decline']),
   replyText: z.string().max(2000).optional(),
   confirm: z.boolean().optional(),
+  reason: z.enum(SPAM_REASONS).optional(),
 });
+
+export type RequestFields = { handle: string; senderName: string; senderEmail: string; note: string; inputFlags: string[] };
+
+/** A free-pass request: who you are and one short paragraph on why. No hold. */
+export function parseRequest(raw: Record<string, unknown> | null): { ok: true; data: RequestFields } | { ok: false; errors: FieldErrors } {
+  const r = raw ?? {};
+  const errors: FieldErrors = {};
+  if (typeof r.website === 'string' && r.website.trim() !== '') errors.form = 'Could not send this request.';
+  const handle = parseHandle(r.handle);
+  if (!handle.ok) errors.handle = 'Unknown page.';
+  const name = cleanText(r.senderName, { max: 80 });
+  const email = cleanText(r.senderEmail, { max: 254 });
+  const note = cleanText(r.note, { multiline: true, max: 280 });
+  if (!name.text) errors.senderName = 'Add your name.';
+  if (!isEmail(email.text)) errors.senderEmail = 'Add a valid email address.';
+  if (note.text.length < 10) errors.note = 'Say in a sentence or two why you would like a free pass.';
+  if (typeof r.note === 'string' && r.note.length > 280) errors.note = 'Keep it under 280 characters.';
+  if (Object.keys(errors).length || !handle.ok) return { ok: false, errors };
+  const inputFlags = [name, email, note].some((c) => c.hadHidden) ? ['hidden_characters'] : [];
+  return { ok: true, data: { handle: handle.handle, senderName: name.text, senderEmail: email.text.toLowerCase(), note: note.text, inputFlags } };
+}

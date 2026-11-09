@@ -2,11 +2,12 @@ import 'server-only';
 import { getCharity, getConfig } from '@/lib/config';
 import { getDb } from '@/lib/db';
 import { newId, newToken } from '@/lib/ids';
+import { type SpamReason, type Via } from '@/lib/copy';
 import { getMessage, recordDecision, type Decision } from '@/lib/messages';
 import * as pp from '@/lib/paypal/api';
 import { issueOf, PayPalUnknownOutcomeError, type PayPalResult } from '@/lib/paypal/client';
 import { readOrder } from '@/lib/paypal/toolkit';
-import { getRecipientByHandle, matchesFreeLane } from '@/lib/recipients';
+import { addToFreeLane, getRecipientByHandle, matchesFreeLane } from '@/lib/recipients';
 import { takeRateLimit } from '@/lib/ratelimit';
 import { getTriage, onDelivered } from '@/lib/triage/pipeline';
 import { assertOperation, isTerminal, STATE_COPY, type Actor, type Outcome } from './machine';
@@ -63,6 +64,9 @@ export type SendInput = {
   subject: string;
   body: string;
   inputFlags: string[];
+  /** Where the message came from. Agents using the API or MCP declare themselves with agentName. */
+  via?: Via;
+  agentName?: string | null;
 };
 
 export type SendResult = { lane: 'free'; statusToken: string } | { lane: 'hold'; statusToken: string; approveUrl: string };
@@ -76,12 +80,13 @@ export async function sendMessage(input: SendInput, ctx: { ipHash: string | null
   const messageId = newId('msg');
   const statusToken = newToken();
   const common = [messageId, recipient.id, input.senderName, input.senderEmail, input.subject, input.body, JSON.stringify(input.inputFlags), statusToken, ctx.ipHash];
+  const origin = [input.via ?? 'web', input.agentName ?? null];
 
   if (matchesFreeLane(recipient.freeLane, input.senderEmail)) {
     await db.query(
-      `INSERT INTO messages (id, recipient_id, lane, sender_name, sender_email, subject, body, input_flags, status_token, ip_hash, delivered_at)
-       VALUES ($1, $2, 'free', $3, $4, $5, $6, $7::jsonb, $8, $9, now())`,
-      common,
+      `INSERT INTO messages (id, recipient_id, lane, sender_name, sender_email, subject, body, input_flags, status_token, ip_hash, delivered_at, via, agent_name)
+       VALUES ($1, $2, 'free', $3, $4, $5, $6, $7::jsonb, $8, $9, now(), $10, $11)`,
+      [...common, ...origin],
     );
     await onDelivered(messageId);
     return { lane: 'free', statusToken };
@@ -90,8 +95,8 @@ export async function sendMessage(input: SendInput, ctx: { ipHash: string | null
   const holdId = newId('hold');
   await db.query(
     `WITH m AS (
-       INSERT INTO messages (id, recipient_id, lane, sender_name, sender_email, subject, body, input_flags, status_token, ip_hash)
-       VALUES ($1, $2, 'hold', $3, $4, $5, $6, $7::jsonb, $8, $9) RETURNING id, recipient_id
+       INSERT INTO messages (id, recipient_id, lane, sender_name, sender_email, subject, body, input_flags, status_token, ip_hash, via, agent_name)
+       VALUES ($1, $2, 'hold', $3, $4, $5, $6, $7::jsonb, $8, $9, $16, $17) RETURNING id, recipient_id
      ), h AS (
        INSERT INTO holds (id, message_id, recipient_id, state, amount_cents, currency, charity_id, release_minutes)
        SELECT $10, id, recipient_id, 'DRAFT', $11, $12, $13, $14 FROM m RETURNING id
@@ -105,7 +110,8 @@ export async function sendMessage(input: SendInput, ctx: { ipHash: string | null
       recipient.currency,
       recipient.charityId,
       recipient.releaseMinutes,
-      JSON.stringify({ amount_cents: recipient.holdCents, release_minutes: recipient.releaseMinutes, charity: charity.name }),
+      JSON.stringify({ amount_cents: recipient.holdCents, release_minutes: recipient.releaseMinutes, charity: charity.name, via: origin[0] }),
+      ...origin,
     ],
   );
 
@@ -149,6 +155,49 @@ export async function sendMessage(input: SendInput, ctx: { ipHash: string | null
 }
 
 /** The buyer came back from PayPal (return_url). Authorize right away and show the status page. */
+// ================================================================ free-pass requests
+
+export type RequestInput = { handle: string; senderName: string; senderEmail: string; note: string; inputFlags: string[] };
+
+/** How many undecided requests a page holds before it stops taking more, and how often one person may ask. */
+export const REQUEST_LIMITS = { pendingPerPage: 20, repeatDays: 7 } as const;
+
+/**
+ * Someone who cannot or will not place a hold asks for a free pass. It costs nothing, so it is tightly
+ * limited: one per address per page per week, and a page stops taking requests while 20 are undecided.
+ * The recipient can grant it (the address joins the free lane) or decline it. No money is involved.
+ */
+export async function requestFreePass(input: RequestInput, ctx: { ipHash: string | null }): Promise<{ statusToken: string }> {
+  const recipient = await getRecipientByHandle(input.handle);
+  if (!recipient) throw new StampError('not_found', 'There is no Stamp page with that handle.', 404);
+  if (matchesFreeLane(recipient.freeLane, input.senderEmail)) {
+    throw new StampError('already_free', 'This address can already write without a hold. Just send your message.', 409);
+  }
+  const db = await getDb();
+  const recent = await db.query<{ n: number }>(
+    `SELECT count(*)::int AS n FROM messages
+      WHERE recipient_id = $1 AND lane = 'request' AND sender_email = $2 AND created_at > now() - make_interval(days => $3)`,
+    [recipient.id, input.senderEmail, REQUEST_LIMITS.repeatDays],
+  );
+  if (Number(recent[0]?.n ?? 0) > 0) throw new StampError('already_requested', 'You already asked this page for a free pass this week.', 429);
+  const pending = await db.query<{ n: number }>(
+    `SELECT count(*)::int AS n FROM messages WHERE recipient_id = $1 AND lane = 'request' AND decision IS NULL`,
+    [recipient.id],
+  );
+  if (Number(pending[0]?.n ?? 0) >= REQUEST_LIMITS.pendingPerPage) {
+    throw new StampError('requests_full', 'This page is not taking free-pass requests right now. You can still write with a hold.', 429);
+  }
+  const messageId = newId('msg');
+  const statusToken = newToken();
+  await db.query(
+    `INSERT INTO messages (id, recipient_id, lane, sender_name, sender_email, subject, body, input_flags, status_token, ip_hash, delivered_at)
+     VALUES ($1, $2, 'request', $3, $4, 'Free pass request', $5, $6::jsonb, $7, $8, now())`,
+    [messageId, recipient.id, input.senderName, input.senderEmail, input.note, JSON.stringify(input.inputFlags), statusToken, ctx.ipHash],
+  );
+  await onDelivered(messageId);
+  return { statusToken };
+}
+
 export async function handleApprovalReturn(orderId: string): Promise<string> {
   const hold = await repo.getHoldByOrderId(orderId);
   if (!hold) throw new StampError('not_found', 'Unknown checkout.', 404);
@@ -319,17 +368,28 @@ export async function recipientDecide(
   recipientId: string,
   messageId: string,
   action: Decision,
-  opts: { replyText?: string | null; confirm?: boolean },
-): Promise<{ lane: 'free' | 'hold'; hold: Hold | null }> {
+  opts: { replyText?: string | null; confirm?: boolean; reason?: SpamReason | null },
+): Promise<{ lane: 'free' | 'hold' | 'request'; hold: Hold | null; freeLane?: 'added' | 'present' | 'full' }> {
   const msg = await getMessage(messageId);
   if (!msg || msg.recipientId !== recipientId) throw new StampError('not_found', 'Message not found.', 404);
   if (msg.decision) throw new StampError('already_decided', 'You already decided on this message.', 409);
+
+  if (msg.lane === 'request') {
+    if (action !== 'grant' && action !== 'decline') throw new StampError('invalid_action', 'A free-pass request can only be granted or declined.', 400);
+    if (!(await recordDecision(messageId, action, null))) throw new StampError('already_decided', 'You already decided on this request.', 409);
+    const freeLane = action === 'grant' ? await addToFreeLane(recipientId, msg.senderEmail) : undefined;
+    return { lane: 'request', hold: null, freeLane };
+  }
+  if (action === 'grant' || action === 'decline') throw new StampError('invalid_action', 'Only free-pass requests can be granted or declined.', 400);
+
   const replyText = action === 'reply' ? (opts.replyText ?? '').trim() : null;
   if (action === 'reply' && !replyText) throw new StampError('reply_required', 'Write a reply first.', 400);
   if (action === 'spam' && opts.confirm !== true) throw new StampError('confirm_required', 'Please confirm before marking a message as spam.', 400);
+  const reason = action === 'spam' ? (opts.reason ?? null) : null;
+  if (action === 'spam' && !reason) throw new StampError('reason_required', 'Pick a reason. The sender will see it.', 400);
 
   if (msg.lane === 'free') {
-    if (!(await recordDecision(messageId, action, replyText))) throw new StampError('already_decided', 'You already decided on this message.', 409);
+    if (!(await recordDecision(messageId, action, replyText, reason))) throw new StampError('already_decided', 'You already decided on this message.', 409);
     return { lane: 'free', hold: null };
   }
 
@@ -350,12 +410,13 @@ export async function recipientDecide(
     throw new StampError('not_held', 'This hold is no longer live.', 409);
   }
   const triage = await getTriage(messageId);
-  await recordDecision(messageId, action, replyText);
+  await recordDecision(messageId, action, replyText, reason);
   await repo.addEvent(hold.id, {
     kind: 'decision',
     actor: 'recipient',
     detail: {
       action,
+      ...(reason ? { reason } : {}),
       ai_recommendation: triage?.recommendation ?? null,
       ai_source: triage?.source ?? null,
       ai_fit: triage?.fitScore ?? null,

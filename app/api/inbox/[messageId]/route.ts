@@ -7,7 +7,7 @@ import { holdView } from '@/lib/views';
 
 export const dynamic = 'force-dynamic';
 
-/** The recipient's decision: reply / worth_it (release the hold) or spam (capture + donate). */
+/** The recipient's decision: reply / worth_it (release the hold), spam (capture + donate), or grant / decline a free-pass request. */
 export async function POST(req: Request, ctx: { params: Promise<{ messageId: string }> }) {
   try {
     assertSameOrigin(req);
@@ -22,8 +22,9 @@ export async function POST(req: Request, ctx: { params: Promise<{ messageId: str
     const result = await recipientDecide(owner.id, messageId, parsed.data.action, {
       replyText: parsed.data.replyText ?? null,
       confirm: parsed.data.confirm,
+      reason: parsed.data.reason ?? null,
     });
-    return json({ lane: result.lane, hold: result.hold ? holdView(result.hold) : null });
+    return json({ lane: result.lane, hold: result.hold ? holdView(result.hold) : null, freeLane: result.freeLane ?? null });
   } catch (err) {
     return errorResponse(err);
   }

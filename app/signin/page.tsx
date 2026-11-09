@@ -28,25 +28,23 @@ export default function SignInPage() {
   }, []);
 
   return (
-    <div className="mx-auto max-w-xl px-4 pt-16 sm:px-6">
-      <div className="card p-6 sm:p-8" aria-live="polite">
-        {state === 'working' ? <p className="text-lg">Opening your inbox…</p> : null}
-        {state === 'missing' ? (
-          <>
-            <h1 className="font-display text-2xl font-semibold">Use your private link</h1>
-            <p className="mt-2 text-ink-2">Open the full private inbox link you saved when you created your page.</p>
-          </>
-        ) : null}
-        {state === 'error' ? (
-          <>
-            <h1 className="font-display text-2xl font-semibold">That link didn’t work</h1>
-            <p className="mt-2 text-ink-2">{message}</p>
-            <Link className="btn btn-ghost mt-6" href="/">
-              Back home
-            </Link>
-          </>
-        ) : null}
-      </div>
+    <div className="mx-auto max-w-xl px-4 pt-16 sm:px-6" aria-live="polite">
+      {state === 'working' ? <p className="text-[17px] leading-7 text-ink-2">Opening your inbox…</p> : null}
+      {state === 'missing' ? (
+        <>
+          <h1 className="text-[32px] leading-[1.15] font-medium tracking-[-0.02em]">Use your private link</h1>
+          <p className="mt-3 text-[17px] leading-7 text-ink-2">Open the full private inbox link you saved when you created your page.</p>
+        </>
+      ) : null}
+      {state === 'error' ? (
+        <>
+          <h1 className="text-[32px] leading-[1.15] font-medium tracking-[-0.02em]">That link did not work</h1>
+          <p className="mt-3 text-[17px] leading-7 text-ink-2">{message}</p>
+          <Link className="btn btn-secondary mt-8" href="/">
+            Back home
+          </Link>
+        </>
+      ) : null}
     </div>
   );
 }

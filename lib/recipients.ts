@@ -94,6 +94,33 @@ export async function verifyOwnerKey(key: string | undefined | null): Promise<Re
   return safeEqual(String(row.owner_token_hash), sha256(secret)) ? mapRecipient(row) : null;
 }
 
+export const FREE_LANE_MAX = 50;
+
+/**
+ * Grants a free pass: appends one exact address to the free lane (no duplicates, capped).
+ * Returns 'added', 'present' or 'full'. Single statement, so two grants cannot lose each other.
+ */
+export async function addToFreeLane(recipientId: string, email: string): Promise<'added' | 'present' | 'full'> {
+  const e = email.trim().toLowerCase();
+  const db = await getDb();
+  const rows = await db.query<{ was_present: boolean; is_present: boolean }>(
+    `WITH old AS (SELECT free_lane AS before FROM recipients WHERE id = $1)
+     UPDATE recipients r
+        SET free_lane = CASE
+              WHEN r.free_lane @> to_jsonb($2::text) OR jsonb_array_length(r.free_lane) >= $3 THEN r.free_lane
+              ELSE r.free_lane || to_jsonb($2::text) END,
+            updated_at = now()
+       FROM old
+      WHERE r.id = $1
+      RETURNING (old.before @> to_jsonb($2::text)) AS was_present, (r.free_lane @> to_jsonb($2::text)) AS is_present`,
+    [recipientId, e, FREE_LANE_MAX],
+  );
+  const row = rows[0];
+  if (!row) return 'full';
+  if (row.was_present) return 'present';
+  return row.is_present ? 'added' : 'full';
+}
+
 /**
  * Free lane: an exact address ("ana@example.org") or a whole domain ("@example.org").
  * The address is typed by the sender and NOT verified, so free-lane messages are labelled as such.

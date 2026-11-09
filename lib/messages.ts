@@ -1,12 +1,15 @@
 import 'server-only';
+import type { SpamReason, Via } from '@/lib/copy';
 import { getDb, toIso, toJsonArray, type Row } from '@/lib/db';
 
-export type Decision = 'reply' | 'worth_it' | 'spam';
+/** reply / worth_it / spam decide a message; grant / decline answer a free-pass request. */
+export type Decision = 'reply' | 'worth_it' | 'spam' | 'grant' | 'decline';
+export type Lane = 'hold' | 'free' | 'request';
 
 export type Message = {
   id: string;
   recipientId: string;
-  lane: 'hold' | 'free';
+  lane: Lane;
   senderName: string;
   senderEmail: string;
   subject: string;
@@ -16,15 +19,18 @@ export type Message = {
   createdAt: string;
   deliveredAt: string | null;
   decision: Decision | null;
+  decisionReason: SpamReason | null;
   decidedAt: string | null;
   replyText: string | null;
+  via: Via;
+  agentName: string | null;
 };
 
 export function mapMessage(r: Row): Message {
   return {
     id: String(r.id),
     recipientId: String(r.recipient_id),
-    lane: r.lane as 'hold' | 'free',
+    lane: r.lane as Lane,
     senderName: String(r.sender_name),
     senderEmail: String(r.sender_email),
     subject: String(r.subject),
@@ -34,8 +40,11 @@ export function mapMessage(r: Row): Message {
     createdAt: toIso(r.created_at) ?? '',
     deliveredAt: toIso(r.delivered_at),
     decision: (r.decision as Decision | null) ?? null,
+    decisionReason: (r.decision_reason as SpamReason | null) ?? null,
     decidedAt: toIso(r.decided_at),
     replyText: r.reply_text === null || r.reply_text === undefined ? null : String(r.reply_text),
+    via: ((r.via as Via | null) ?? 'web') as Via,
+    agentName: r.agent_name === null || r.agent_name === undefined ? null : String(r.agent_name),
   };
 }
 
@@ -53,11 +62,11 @@ export async function getMessageByStatusToken(token: string): Promise<Message | 
 }
 
 /** Records the recipient's decision exactly once. Returns false if a decision already exists. */
-export async function recordDecision(id: string, decision: Decision, replyText: string | null): Promise<boolean> {
+export async function recordDecision(id: string, decision: Decision, replyText: string | null, reason: SpamReason | null = null): Promise<boolean> {
   const db = await getDb();
   const rows = await db.query(
-    'UPDATE messages SET decision = $2, decided_at = now(), reply_text = $3 WHERE id = $1 AND decision IS NULL RETURNING id',
-    [id, decision, replyText],
+    'UPDATE messages SET decision = $2, decided_at = now(), reply_text = $3, decision_reason = $4 WHERE id = $1 AND decision IS NULL RETURNING id',
+    [id, decision, replyText, decision === 'spam' ? reason : null],
   );
   return rows.length > 0;
 }

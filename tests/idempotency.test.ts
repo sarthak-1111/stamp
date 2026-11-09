@@ -83,7 +83,7 @@ describe('idempotency: PayPal-Request-Id is stored first and reused on every ret
   it('capture: HTTP 500 (not applied) is retried with the same key, then donated once', async () => {
     const { msg, holdId, recipientId } = await authorized();
     paypal.fail(/\/capture$/, 'http500');
-    await recipientDecide(recipientId, msg.id, 'spam', { confirm: true });
+    await recipientDecide(recipientId, msg.id, 'spam', { confirm: true, reason: 'bulk' });
     expect((await getHold(holdId))?.pendingOp).toBe('capture');
     await makeStale(db, holdId);
     await reconcileHold(holdId);
@@ -99,7 +99,7 @@ describe('idempotency: PayPal-Request-Id is stored first and reused on every ret
   it('capture: applied but response lost; reconciler mirrors the capture and starts the donation', async () => {
     const { msg, holdId, recipientId } = await authorized();
     paypal.fail(/\/capture$/, 'lost');
-    await recipientDecide(recipientId, msg.id, 'spam', { confirm: true });
+    await recipientDecide(recipientId, msg.id, 'spam', { confirm: true, reason: 'bulk' });
     await makeStale(db, holdId);
     await reconcileHold(holdId);
     const h = await getHold(holdId);
@@ -112,7 +112,7 @@ describe('idempotency: PayPal-Request-Id is stored first and reused on every ret
   it('payout: lost response is replayed with the same key: ONE payout to the charity', async () => {
     const { msg, holdId, recipientId } = await authorized();
     paypal.fail(/POST \/v1\/payments\/payouts$/, 'lost');
-    await recipientDecide(recipientId, msg.id, 'spam', { confirm: true });
+    await recipientDecide(recipientId, msg.id, 'spam', { confirm: true, reason: 'bulk' });
     let h = await getHold(holdId);
     expect(h?.state).toBe('CAPTURED');
     expect(h?.pendingOp).toBe('payout');
@@ -138,7 +138,7 @@ describe('idempotency: PayPal-Request-Id is stored first and reused on every ret
 
   it('every PayPal write carries a PayPal-Request-Id', async () => {
     const { msg, recipientId } = await authorized();
-    await recipientDecide(recipientId, msg.id, 'spam', { confirm: true });
+    await recipientDecide(recipientId, msg.id, 'spam', { confirm: true, reason: 'bulk' });
     const writes = paypal.writes();
     expect(writes.length).toBeGreaterThanOrEqual(4);
     for (const w of writes) expect(w.requestId, `${w.method} ${w.path}`).toBeTruthy();

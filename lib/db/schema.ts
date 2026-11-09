@@ -1,8 +1,18 @@
 /**
  * Postgres schema (Neon in production, PGlite locally and in tests).
  * Statements are idempotent; bump SCHEMA_VERSION when adding statements.
+ *  v1: initial tables.
+ *  v2: free-pass request lane, grant/decline decisions, spam reasons, and where a message came from
+ *      (web form, JSON API or MCP) plus the agent that declared itself.
  */
-export const SCHEMA_VERSION = 1;
+export const SCHEMA_VERSION = 2;
+
+/** Replace a CHECK constraint; safe if two cold starts race on it. */
+const replaceCheck = (table: string, name: string, check: string) =>
+  `DO $$ BEGIN
+     ALTER TABLE ${table} DROP CONSTRAINT IF EXISTS ${name};
+     ALTER TABLE ${table} ADD CONSTRAINT ${name} CHECK (${check});
+   EXCEPTION WHEN duplicate_object THEN NULL; END $$`;
 
 export const SCHEMA: string[] = [
   `CREATE TABLE IF NOT EXISTS schema_meta (id int PRIMARY KEY, version int NOT NULL)`,
@@ -141,4 +151,18 @@ export const SCHEMA: string[] = [
     window_start timestamptz NOT NULL,
     count int NOT NULL
   )`,
+
+  // ---- v2
+  `ALTER TABLE messages ADD COLUMN IF NOT EXISTS decision_reason text`,
+  `ALTER TABLE messages ADD COLUMN IF NOT EXISTS via text NOT NULL DEFAULT 'web'`,
+  `ALTER TABLE messages ADD COLUMN IF NOT EXISTS agent_name text`,
+  replaceCheck('messages', 'messages_lane_check', `lane IN ('hold', 'free', 'request')`),
+  replaceCheck('messages', 'messages_decision_check', `decision IN ('reply', 'worth_it', 'spam', 'grant', 'decline')`),
+  replaceCheck('messages', 'messages_via_check', `via IN ('web', 'api', 'mcp')`),
+  replaceCheck(
+    'messages',
+    'messages_decision_reason_check',
+    `decision_reason IS NULL OR decision_reason IN ('bulk', 'scam', 'abuse', 'manipulation', 'other')`,
+  ),
+  `CREATE INDEX IF NOT EXISTS messages_requests_idx ON messages (recipient_id, sender_email, created_at DESC) WHERE lane = 'request'`,
 ];

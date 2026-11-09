@@ -46,7 +46,7 @@ export function TriagePanel({ triage: t, footer = true }: { triage: TriageData; 
       ) : null}
       {t.flags.length ? (
         <ul className="mt-3 flex flex-wrap gap-1.5" aria-label="Red flags">
-          {t.flags.map((f) => (
+          {[...new Set(t.flags.map((f) => f.charAt(0).toUpperCase() + f.slice(1)))].map((f) => (
             <li key={f} className="tag !bg-bad-bg !text-[12px] !leading-[18px] !text-bad">
               {f}
             </li>
