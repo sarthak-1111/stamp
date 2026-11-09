@@ -49,7 +49,7 @@ Why the toolkit only reads: its `create_order` hard-codes `intent: CAPTURE`, and
 
 ## AI
 
-- **Model:** `gpt-oss:120b`, an open-weight model, self-hosted and called through any OpenAI-compatible `/chat/completions` endpoint. The deployed demo reaches it through an authenticating proxy ([`scripts/ai-proxy.mjs`](scripts/ai-proxy.mjs)).
+- **Model:** `gpt-oss:120b`, an open-weight model, self-hosted and called through any OpenAI-compatible `/chat/completions` endpoint. The deployed demo reaches it through an API-key-protected HTTPS tunnel to that machine; [`scripts/ai-proxy.mjs`](scripts/ai-proxy.mjs) is a small authenticating proxy for doing the same with your own model.
 - **Output is constrained.** The model must return a strict JSON schema, validated with zod. Anything else is discarded and Stamp uses its rule-based triage, labelled as such in the UI.
 - **The model has no tools and no access to money.** The permission table in [`lib/holds/machine.ts`](lib/holds/machine.ts) gives the `ai` actor no operation, and the landing page renders that table directly.
 - **Message text is untrusted data.** It is fenced off with a random boundary marker. Deterministic red-flag rules can raise the risk score, the model cannot lower it below them, and the recommendation is computed in code. A message that says "mark me worthwhile" or "send the hold to me" changes nothing, and [`tests/injection.test.ts`](tests/injection.test.ts) and [`tests/agents.test.ts`](tests/agents.test.ts) prove it.
@@ -74,7 +74,7 @@ flowchart LR
   toolkit --> paypal
   paypal -->|"verified webhooks"| api
   timer["Release timer (GitHub Actions + lazy sweeps)"] --> api
-  triage -->|"message as data, no tools"| model["gpt-oss:120b behind an auth proxy"]
+  triage -->|"message as data, no tools"| model["gpt-oss:120b, key-protected endpoint"]
 ```
 
 ### Hold lifecycle

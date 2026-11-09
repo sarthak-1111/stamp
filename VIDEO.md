@@ -28,8 +28,8 @@ One line per row. "Says" spells numbers out for the voice; "Caption" shows the f
 | i1 | idea | Stamp puts a price on reaching you, and gives it back. | Stamp puts a price on reaching you, and gives it back. |
 | i2 | idea | To write to you, a stranger places a small refundable hold in PayPal. | To write to you, a stranger places a small refundable hold in PayPal. |
 | i3 | idea | Real messages get it back. Spam pays a charity. | Real messages get it back. Spam pays a charity. |
-| s1 | send | This is Maya's page. Her terms are public: a five dollar hold, the topics she cares about, and where spam money goes. | This is Maya's page. Her terms are public: a $5 hold, the topics she cares about, and where spam money goes. |
-| s2 | send | A sender writes, then approves the hold in the PayPal sandbox. It's an authorization, not a payment. | A sender writes, then approves the hold in the PayPal sandbox. It's an authorization, not a payment. |
+| s1 | send | This is Maya's page. Her terms are public: a five dollar hold, the topics she cares about, where spam money goes, and how often she gives holds back. | This is Maya's page. Her terms are public: a $5 hold, the topics she cares about, where spam money goes, and how often she gives holds back. |
+| s2 | send | A sender writes, then approves the hold in the PayPal sandbox. It's an authorization, not a payment. No PayPal? They can ask for a free pass. | A sender writes, then approves the hold in the PayPal sandbox. It's an authorization, not a payment. No PayPal? They can ask for a free pass. |
 | s3 | send | The status page shows the hold, and that nothing has been charged. | The status page shows the hold, and that nothing has been charged. |
 | n1 | inbox | In Maya's inbox, the AI reads each message and suggests: how well it fits her topics, the scam risk, a one line summary and a draft reply. | In Maya's inbox, the AI reads each message and suggests: fit with her topics, scam risk, a one-line summary and a draft reply. |
 | n2 | inbox | This one tells the AI to mark it worthwhile, and to send the hold back to the sender. | This one tells the AI to mark it worthwhile, and to send the hold back to the sender. |
@@ -37,13 +37,13 @@ One line per row. "Says" spells numbers out for the voice; "Caption" shows the f
 | d1 | decide | Maya replies. PayPal voids the authorization, and the sender pays nothing. | Maya replies. PayPal voids the authorization, and the sender pays nothing. |
 | d2 | decide | She marks the bulk pitch as spam, and picks a reason the sender will see. | She marks the bulk pitch as spam, and picks a reason the sender will see. |
 | d3 | decide | PayPal captures the hold and pays it out to her charity: four dollars thirty four, after PayPal's fee. Maya gets nothing, and neither does Stamp. | PayPal captures the hold and pays it out to her charity: $4.34, after PayPal's fee (E2E). Maya gets nothing, and neither does Stamp. |
-| l1 | ledger | If she never decides, a timer releases the hold, well inside PayPal's three day honor period. | If she never decides, a timer releases the hold, well inside PayPal's 3-day honor period. |
+| l1 | ledger | If she never decides, a timer releases the hold, always within PayPal's three day honor period. | If she never decides, a timer releases the hold, always within PayPal's 3-day honor period. |
 | l2 | ledger | The ledger shows every hold, the AI's suggestion next to her decision, and each PayPal call with its idempotency key. | The ledger shows every hold, the AI's suggestion next to her decision, and each PayPal call with its idempotency key. |
 | a1 | agents | Outreach agents get the same lane, through an API or MCP. A person still approves the hold, and Maya sees that an agent wrote it. | Outreach agents get the same lane, through an API or MCP. A person still approves the hold, and Maya sees that an agent wrote it. |
 | c1 | close | The AI reads. It never pays. | The AI reads. It never pays. |
 | c2 | close | Stamp. Strangers can reach you. Spam pays a charity. | Stamp. Strangers can reach you. Spam pays a charity. |
 
-About 320 words: roughly 2:10 of voice at the pipeline's pace, leaving room for the PayPal approval, the dialog and the two status-page reveals to play without narration.
+About 340 words: roughly 2:15 of voice at the pipeline's pace, leaving room for the PayPal approval, the dialog and the two status-page reveals to play without narration.
 
 ## How it is made
 
@@ -58,5 +58,6 @@ The same pipeline as `D:\stepswitch_HN\video` (see its `VIDEO-PIPELINE.md`), ada
 ## Honesty notes
 
 - Everything on screen is the deployed sandbox demo. Sped-up parts (typing, the timer) carry an on-screen badge.
+- Scene 3 is recorded after Maya has decided at least three holds, so the return rate on her page is real, not a placeholder.
 - Every figure comes from a recorded run: the $5 hold and the $4.34 payout from the deployed end-to-end run (E2E), the honor period from PayPal's documentation as cited in `API_NOTES.md`.
 - No third-party logos or music. PayPal appears only as its own sandbox checkout and in the API names, as part of the flow being demonstrated. The people and companies in the messages are invented and use reserved `.example` domains.
