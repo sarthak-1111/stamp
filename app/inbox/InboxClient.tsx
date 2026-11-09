@@ -324,9 +324,11 @@ function Empty({ children }: { children: React.ReactNode }) {
 function AgentNote({ card }: { card: InboxCard }) {
   if (card.via === 'web') return null;
   return (
-    <p className="mt-1 inline-flex items-center gap-1.5 text-[13px] leading-5 text-ink-2">
-      <Robot {...ICON} aria-hidden className="text-ink-3" />
-      Sent by an AI agent{card.agentName ? `: ${card.agentName}` : ''}, via {VIA_LABEL[card.via]}
+    <p className="mt-1 flex items-start gap-1.5 text-[13px] leading-5 text-ink-2">
+      <Robot {...ICON} aria-hidden className="mt-0.5 shrink-0 text-ink-3" />
+      <span>
+        Sent by an AI agent{card.agentName ? `: ${card.agentName}` : ''}, via {VIA_LABEL[card.via]}
+      </span>
     </p>
   );
 }
