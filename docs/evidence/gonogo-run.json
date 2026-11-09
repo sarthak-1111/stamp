@@ -1,0 +1,811 @@
+{
+  "note": "Sanitized evidence from scripts/gonogo.mjs against the PayPal SANDBOX. No tokens or secrets; emails masked.",
+  "runId": "gn-1794180838574",
+  "startedAt": "2026-11-08T23:33:58.574Z",
+  "orders": {
+    "A-void": {
+      "id": "9M270105LV7490357",
+      "authorizationId": "2KL15008VG116734L"
+    },
+    "B-capture": {
+      "id": "9AL316445N437950S",
+      "authorizationId": "7L349008C5240583S",
+      "captureId": "79H49583CL366893Y",
+      "net": "4.34"
+    }
+  },
+  "payout": {
+    "batchId": "7S6Y6RQ9CWHCQ",
+    "senderBatchId": "stamp-gonogo-gn-1794180838574",
+    "amount": "4.34",
+    "finalStatus": "SUCCESS",
+    "itemStatus": "SUCCESS"
+  },
+  "coverage": {
+    "localNames": [
+      "accept_dispute_claim",
+      "activate_recurring_series",
+      "cancel_invoice_auto_reminder",
+      "cancel_recurring_series",
+      "cancel_sent_invoice",
+      "cancel_subscription",
+      "create_conditional_rules_for_invoice",
+      "create_invoice",
+      "create_order",
+      "create_product",
+      "create_recurring_series",
+      "create_refund",
+      "create_shipment_tracking",
+      "create_subscription",
+      "create_subscription_plan",
+      "delete_invoice",
+      "delete_recurring_series",
+      "generate_invoice_number",
+      "generate_invoice_qr_code",
+      "get_dispute",
+      "get_invoice",
+      "get_merchant_insights",
+      "get_order",
+      "get_recurring_series",
+      "get_refund",
+      "get_shipment_tracking",
+      "list_disputes",
+      "list_invoices",
+      "list_products",
+      "list_subscription_plans",
+      "list_transactions",
+      "pay_order",
+      "record_payment_for_invoice",
+      "record_refund_for_invoice",
+      "search_invoicing",
+      "send_invoice",
+      "send_invoice_reminder",
+      "setup_invoice_auto_reminders",
+      "show_product_details",
+      "show_subscription_details",
+      "show_subscription_plan_details",
+      "update_invoice_auto_reminder",
+      "update_invoicing",
+      "update_plan",
+      "update_product",
+      "update_shipment_tracking",
+      "update_subscription"
+    ],
+    "remote": {
+      "ok": true,
+      "transport": "sse",
+      "url": "https://mcp.sandbox.paypal.com/sse",
+      "tools": [
+        "accept_dispute_claim",
+        "activate_recurring_series",
+        "cancel_invoice_auto_reminder",
+        "cancel_recurring_series",
+        "cancel_sent_invoice",
+        "cancel_subscription",
+        "create_conditional_rules_for_invoice",
+        "create_invoice",
+        "create_order",
+        "create_product",
+        "create_recurring_series",
+        "create_refund",
+        "create_shipment_tracking",
+        "create_subscription",
+        "create_subscription_plan",
+        "delete_invoice",
+        "delete_recurring_series",
+        "generate_invoice_number",
+        "generate_invoice_qr_code",
+        "get_dispute",
+        "get_invoice",
+        "get_merchant_insights",
+        "get_order",
+        "get_recurring_series",
+        "get_refund",
+        "get_shipment_tracking",
+        "list_disputes",
+        "list_invoices",
+        "list_products",
+        "list_subscription_plans",
+        "list_transactions",
+        "pay_order",
+        "record_payment_for_invoice",
+        "record_refund_for_invoice",
+        "search_invoicing",
+        "send_invoice",
+        "send_invoice_reminder",
+        "setup_invoice_auto_reminders",
+        "show_product_details",
+        "show_subscription_details",
+        "show_subscription_plan_details",
+        "update_invoice_auto_reminder",
+        "update_invoicing",
+        "update_product",
+        "update_shipment_tracking",
+        "update_subscription"
+      ],
+      "createOrderInputHasIntent": false,
+      "attempts": [
+        {
+          "kind": "streamable-http",
+          "url": "https://mcp.sandbox.paypal.com/http",
+          "ok": false,
+          "error": "Streamable HTTP error: Error POSTing to endpoint: Not Found"
+        },
+        {
+          "kind": "sse",
+          "url": "https://mcp.sandbox.paypal.com/sse",
+          "ok": true
+        }
+      ]
+    },
+    "matrix": {
+      "create order (intent AUTHORIZE)": {
+        "local": [],
+        "remote": [],
+        "note": "create_order exists but its input schema has no intent field (local=false, remote=false); the toolkit hard-codes intent CAPTURE"
+      },
+      "get order": {
+        "local": [
+          "get_order"
+        ],
+        "remote": [
+          "get_order"
+        ]
+      },
+      "authorize order": {
+        "local": [],
+        "remote": []
+      },
+      "void authorization": {
+        "local": [],
+        "remote": []
+      },
+      "capture authorization": {
+        "local": [],
+        "remote": []
+      },
+      "payouts": {
+        "local": [],
+        "remote": []
+      }
+    }
+  },
+  "events": [
+    {
+      "at": "2026-11-08T23:33:59.563Z",
+      "step": "oauth.token",
+      "method": "POST",
+      "path": "/v1/oauth2/token",
+      "status": 200,
+      "debugId": "ca57862c4fce3",
+      "note": "token_type=Bearer expires_in=32400s",
+      "extract": {
+        "token_type": "Bearer",
+        "expires_in": 32400,
+        "app_id": "APP-9LP40066HK332225A",
+        "scope_count": 28,
+        "payout_scopes": [
+          "https://uri.paypal.com/payments/payouts"
+        ]
+      }
+    },
+    {
+      "at": "2026-11-08T23:34:00.654Z",
+      "step": "orders.create(A-void)",
+      "method": "POST",
+      "path": "/v2/checkout/orders",
+      "requestId": "17da7ac7-72f2-4bfe-82e7-71b7c197d668",
+      "status": 200,
+      "debugId": "ca57862c76a33",
+      "note": "id=9M270105LV7490357 status=PAYER_ACTION_REQUIRED",
+      "extract": {
+        "id": "9M270105LV7490357",
+        "status": "PAYER_ACTION_REQUIRED",
+        "intent": "AUTHORIZE",
+        "amount": "5.00 USD"
+      }
+    },
+    {
+      "at": "2026-11-08T23:34:01.328Z",
+      "step": "orders.create(B-capture)",
+      "method": "POST",
+      "path": "/v2/checkout/orders",
+      "requestId": "c8a008a5-4602-432e-9428-de2b6c6062cb",
+      "status": 200,
+      "debugId": "ca57862ce4d4a",
+      "note": "id=9AL316445N437950S status=PAYER_ACTION_REQUIRED",
+      "extract": {
+        "id": "9AL316445N437950S",
+        "status": "PAYER_ACTION_REQUIRED",
+        "intent": "AUTHORIZE",
+        "amount": "5.00 USD"
+      }
+    },
+    {
+      "at": "2026-11-08T23:34:01.773Z",
+      "step": "idempotency.replay(orders.create A-void)",
+      "method": "POST",
+      "path": "/v2/checkout/orders",
+      "requestId": "17da7ac7-72f2-4bfe-82e7-71b7c197d668",
+      "status": 200,
+      "debugId": "ca57862d278b2",
+      "note": "returned id=9M270105LV7490357 (same as original: true)",
+      "extract": {
+        "originalId": "9M270105LV7490357",
+        "replayId": "9M270105LV7490357",
+        "sameOrder": true
+      }
+    },
+    {
+      "at": "2026-11-09T00:09:51.937Z",
+      "step": "oauth.token",
+      "method": "POST",
+      "path": "/v1/oauth2/token",
+      "status": 200,
+      "debugId": "f758619a2a278",
+      "note": "token_type=Bearer expires_in=31815s",
+      "extract": {
+        "token_type": "Bearer",
+        "expires_in": 31815,
+        "app_id": "APP-9LP40066HK332225A",
+        "scope_count": 28,
+        "payout_scopes": [
+          "https://uri.paypal.com/payments/payouts"
+        ]
+      }
+    },
+    {
+      "at": "2026-11-09T00:09:55.101Z",
+      "step": "toolkit.get_order(A-void)",
+      "method": "MCP tools/call get_order",
+      "path": "GET /v2/checkout/orders/9M270105LV7490357",
+      "status": "APPROVED",
+      "note": "exposed tools=[get_order] auths=[] captures=[]",
+      "extract": {
+        "id": "9M270105LV7490357",
+        "status": "APPROVED",
+        "intent": "AUTHORIZE",
+        "amount": "5.00 USD",
+        "payer": "sb-j***@personal.example.com",
+        "authorizations": [],
+        "captures": []
+      }
+    },
+    {
+      "at": "2026-11-09T00:09:55.394Z",
+      "step": "toolkit.get_order(B-capture)",
+      "method": "MCP tools/call get_order",
+      "path": "GET /v2/checkout/orders/9AL316445N437950S",
+      "status": "APPROVED",
+      "note": "exposed tools=[get_order] auths=[] captures=[]",
+      "extract": {
+        "id": "9AL316445N437950S",
+        "status": "APPROVED",
+        "intent": "AUTHORIZE",
+        "amount": "5.00 USD",
+        "payer": "sb-j***@personal.example.com",
+        "authorizations": [],
+        "captures": []
+      }
+    },
+    {
+      "at": "2026-11-09T00:10:01.952Z",
+      "step": "oauth.token",
+      "method": "POST",
+      "path": "/v1/oauth2/token",
+      "status": 200,
+      "debugId": "f408509463a71",
+      "note": "token_type=Bearer expires_in=31805s",
+      "extract": {
+        "token_type": "Bearer",
+        "expires_in": 31805,
+        "app_id": "APP-9LP40066HK332225A",
+        "scope_count": 28,
+        "payout_scopes": [
+          "https://uri.paypal.com/payments/payouts"
+        ]
+      }
+    },
+    {
+      "at": "2026-11-09T00:10:03.414Z",
+      "step": "orders.authorize(A-void)",
+      "method": "POST",
+      "path": "/v2/checkout/orders/9M270105LV7490357/authorize",
+      "requestId": "b3cc8117-a790-4c1d-9484-3eec5a76d4fa",
+      "status": 201,
+      "debugId": "f519447cedb80",
+      "note": "order=COMPLETED authorization=2KL15008VG116734L CREATED expires=2026-12-08T00:10:02Z",
+      "extract": {
+        "orderStatus": "COMPLETED",
+        "authorization": {
+          "id": "2KL15008VG116734L",
+          "status": "CREATED",
+          "amount": {
+            "currency_code": "USD",
+            "value": "5.00"
+          },
+          "create_time": "2026-11-09T00:10:02Z",
+          "expiration_time": "2026-12-08T00:10:02Z"
+        }
+      }
+    },
+    {
+      "at": "2026-11-09T00:10:04.194Z",
+      "step": "idempotency.replay(orders.authorize A-void)",
+      "method": "POST",
+      "path": "/v2/checkout/orders/9M270105LV7490357/authorize",
+      "requestId": "b3cc8117-a790-4c1d-9484-3eec5a76d4fa",
+      "status": 201,
+      "debugId": "f8942494ad95d",
+      "note": "authorization=2KL15008VG116734L (same: true)",
+      "extract": {
+        "originalAuthorizationId": "2KL15008VG116734L",
+        "replayAuthorizationId": "2KL15008VG116734L",
+        "same": true
+      }
+    },
+    {
+      "at": "2026-11-09T00:10:04.841Z",
+      "step": "authorizations.get(A-void)",
+      "method": "GET",
+      "path": "/v2/payments/authorizations/2KL15008VG116734L",
+      "status": 200,
+      "debugId": "f48393183a4bb",
+      "note": "status=CREATED create=2026-11-09T00:10:02Z expires=2026-12-08T00:10:02Z (validity 29.00 days)",
+      "extract": {
+        "id": "2KL15008VG116734L",
+        "status": "CREATED",
+        "create_time": "2026-11-09T00:10:02Z",
+        "expiration_time": "2026-12-08T00:10:02Z",
+        "validityDays": 29,
+        "links": [
+          "self",
+          "capture",
+          "void",
+          "reauthorize",
+          "up"
+        ]
+      }
+    },
+    {
+      "at": "2026-11-09T00:10:05.581Z",
+      "step": "authorizations.void(A-void)",
+      "method": "POST",
+      "path": "/v2/payments/authorizations/2KL15008VG116734L/void",
+      "requestId": "c574bef8-44ce-454b-9b63-9e8df372b826",
+      "status": 200,
+      "debugId": "f573632b6280f",
+      "note": "status=VOIDED",
+      "extract": {
+        "status": "VOIDED"
+      }
+    },
+    {
+      "at": "2026-11-09T00:10:06.535Z",
+      "step": "idempotency.replay(authorizations.void A-void)",
+      "method": "POST",
+      "path": "/v2/payments/authorizations/2KL15008VG116734L/void",
+      "requestId": "c574bef8-44ce-454b-9b63-9e8df372b826",
+      "status": 200,
+      "debugId": "f5482257e2e56",
+      "note": "status=VOIDED"
+    },
+    {
+      "at": "2026-11-09T00:10:07.405Z",
+      "step": "authorizations.get(A-void, after void)",
+      "method": "GET",
+      "path": "/v2/payments/authorizations/2KL15008VG116734L",
+      "status": 200,
+      "debugId": "f54914677e900",
+      "note": "status=VOIDED update_time=2026-11-09T00:10:05Z",
+      "extract": {
+        "id": "2KL15008VG116734L",
+        "status": "VOIDED",
+        "update_time": "2026-11-09T00:10:05Z"
+      }
+    },
+    {
+      "at": "2026-11-09T00:10:08.352Z",
+      "step": "guard.capture-after-void(A-void) [expected to fail]",
+      "method": "POST",
+      "path": "/v2/payments/authorizations/2KL15008VG116734L/capture",
+      "status": 422,
+      "debugId": "f54914657db4c",
+      "note": "UNPROCESSABLE_ENTITY | AUTHORIZATION_VOIDED | The requested action could not be performed, semantically incorrect, or failed business validation."
+    },
+    {
+      "at": "2026-11-09T00:10:10.087Z",
+      "step": "toolkit.get_order(A-void)",
+      "method": "MCP tools/call get_order",
+      "path": "GET /v2/checkout/orders/9M270105LV7490357",
+      "status": "COMPLETED",
+      "note": "exposed tools=[get_order] auths=[\"VOIDED\"] captures=[]",
+      "extract": {
+        "id": "9M270105LV7490357",
+        "status": "COMPLETED",
+        "intent": "AUTHORIZE",
+        "amount": "5.00 USD",
+        "payer": "sb-j***@personal.example.com",
+        "authorizations": [
+          {
+            "id": "2KL15008VG116734L",
+            "status": "VOIDED",
+            "expiration_time": "2026-12-08T00:10:02Z"
+          }
+        ],
+        "captures": []
+      }
+    },
+    {
+      "at": "2026-11-09T00:10:11.960Z",
+      "step": "orders.authorize(B-capture)",
+      "method": "POST",
+      "path": "/v2/checkout/orders/9AL316445N437950S/authorize",
+      "requestId": "d9254aa9-caee-4835-86a7-4a60bf314faf",
+      "status": 201,
+      "debugId": "f303042ad042a",
+      "note": "order=COMPLETED authorization=7L349008C5240583S CREATED expires=2026-12-08T00:10:11Z",
+      "extract": {
+        "orderStatus": "COMPLETED",
+        "authorization": {
+          "id": "7L349008C5240583S",
+          "status": "CREATED",
+          "amount": {
+            "currency_code": "USD",
+            "value": "5.00"
+          },
+          "create_time": "2026-11-09T00:10:11Z",
+          "expiration_time": "2026-12-08T00:10:11Z"
+        }
+      }
+    },
+    {
+      "at": "2026-11-09T00:10:13.052Z",
+      "step": "idempotency.replay(orders.authorize B-capture)",
+      "method": "POST",
+      "path": "/v2/checkout/orders/9AL316445N437950S/authorize",
+      "requestId": "d9254aa9-caee-4835-86a7-4a60bf314faf",
+      "status": 201,
+      "debugId": "f4674825e63ca",
+      "note": "authorization=7L349008C5240583S (same: true)",
+      "extract": {
+        "originalAuthorizationId": "7L349008C5240583S",
+        "replayAuthorizationId": "7L349008C5240583S",
+        "same": true
+      }
+    },
+    {
+      "at": "2026-11-09T00:10:13.810Z",
+      "step": "authorizations.get(B-capture)",
+      "method": "GET",
+      "path": "/v2/payments/authorizations/7L349008C5240583S",
+      "status": 200,
+      "debugId": "f727615e887a4",
+      "note": "status=CREATED create=2026-11-09T00:10:11Z expires=2026-12-08T00:10:11Z (validity 29.00 days)",
+      "extract": {
+        "id": "7L349008C5240583S",
+        "status": "CREATED",
+        "create_time": "2026-11-09T00:10:11Z",
+        "expiration_time": "2026-12-08T00:10:11Z",
+        "validityDays": 29,
+        "links": [
+          "self",
+          "capture",
+          "void",
+          "reauthorize",
+          "up"
+        ]
+      }
+    },
+    {
+      "at": "2026-11-09T00:10:15.665Z",
+      "step": "authorizations.capture(B-capture)",
+      "method": "POST",
+      "path": "/v2/payments/authorizations/7L349008C5240583S/capture",
+      "requestId": "873a2047-904b-477a-b207-97ceefba3ec7",
+      "status": 201,
+      "debugId": "f488411ca3d03",
+      "note": "capture=79H49583CL366893Y status=COMPLETED gross=5.00 fee=0.66 net=4.34",
+      "extract": {
+        "id": "79H49583CL366893Y",
+        "status": "COMPLETED",
+        "final_capture": true,
+        "create_time": "2026-11-09T00:10:14Z",
+        "seller_receivable_breakdown": {
+          "gross_amount": {
+            "currency_code": "USD",
+            "value": "5.00"
+          },
+          "paypal_fee": {
+            "currency_code": "USD",
+            "value": "0.66"
+          },
+          "net_amount": {
+            "currency_code": "USD",
+            "value": "4.34"
+          },
+          "exchange_rate": {}
+        }
+      }
+    },
+    {
+      "at": "2026-11-09T00:10:16.717Z",
+      "step": "idempotency.replay(authorizations.capture B-capture, same key)",
+      "method": "POST",
+      "path": "/v2/payments/authorizations/7L349008C5240583S/capture",
+      "requestId": "873a2047-904b-477a-b207-97ceefba3ec7",
+      "status": 200,
+      "debugId": "f68841240c89d",
+      "note": "capture=79H49583CL366893Y (same: true)",
+      "extract": {
+        "originalCaptureId": "79H49583CL366893Y",
+        "replayCaptureId": "79H49583CL366893Y",
+        "same": true
+      }
+    },
+    {
+      "at": "2026-11-09T00:10:17.764Z",
+      "step": "guard.second-capture-new-key(B-capture) [expected to fail]",
+      "method": "POST",
+      "path": "/v2/payments/authorizations/7L349008C5240583S/capture",
+      "status": 422,
+      "debugId": "f2102975d32e7",
+      "note": "UNPROCESSABLE_ENTITY | AUTHORIZATION_ALREADY_CAPTURED | The requested action could not be performed, semantically incorrect, or failed business validation."
+    },
+    {
+      "at": "2026-11-09T00:10:18.616Z",
+      "step": "captures.get(B-capture)",
+      "method": "GET",
+      "path": "/v2/payments/captures/79H49583CL366893Y",
+      "status": 200,
+      "debugId": "f9477432cd9f5",
+      "note": "status=COMPLETED",
+      "extract": {
+        "id": "79H49583CL366893Y",
+        "status": "COMPLETED",
+        "update_time": "2026-11-09T00:10:14Z"
+      }
+    },
+    {
+      "at": "2026-11-09T00:10:19.536Z",
+      "step": "toolkit.get_order(B-capture)",
+      "method": "MCP tools/call get_order",
+      "path": "GET /v2/checkout/orders/9AL316445N437950S",
+      "status": "COMPLETED",
+      "note": "exposed tools=[get_order] auths=[\"CAPTURED\"] captures=[\"COMPLETED\"]",
+      "extract": {
+        "id": "9AL316445N437950S",
+        "status": "COMPLETED",
+        "intent": "AUTHORIZE",
+        "amount": "5.00 USD",
+        "payer": "sb-j***@personal.example.com",
+        "authorizations": [
+          {
+            "id": "7L349008C5240583S",
+            "status": "CAPTURED",
+            "expiration_time": "2026-12-08T00:10:11Z"
+          }
+        ],
+        "captures": [
+          {
+            "id": "79H49583CL366893Y",
+            "status": "COMPLETED",
+            "final_capture": true
+          }
+        ]
+      }
+    },
+    {
+      "at": "2026-11-09T00:10:19.968Z",
+      "step": "payouts.create(charity)",
+      "method": "POST",
+      "path": "/v1/payments/payouts",
+      "requestId": "886afe13-deb8-421d-b78a-bd02d13b0058",
+      "status": 201,
+      "debugId": "f27501233bac8",
+      "note": "batch=7S6Y6RQ9CWHCQ status=PENDING amount=4.34 USD -> sb-0***@business.example.com",
+      "extract": {
+        "payout_batch_id": "7S6Y6RQ9CWHCQ",
+        "batch_status": "PENDING",
+        "sender_batch_id": "stamp-gonogo-gn-1794180838574",
+        "amount": "4.34",
+        "receiver": "sb-0***@business.example.com"
+      }
+    },
+    {
+      "at": "2026-11-09T00:10:48.356Z",
+      "step": "payouts.get(charity, final)",
+      "method": "GET",
+      "path": "/v1/payments/payouts/7S6Y6RQ9CWHCQ",
+      "status": 200,
+      "debugId": "f772974970206",
+      "note": "batch_status=SUCCESS item=SUCCESS item_id=X8XZALW5T4LUJ fee=0.25 after 25s",
+      "extract": {
+        "batch_status": "SUCCESS",
+        "time_created": "2026-11-09T00:10:19Z",
+        "time_completed": "2026-11-09T00:10:43Z",
+        "amount": {
+          "currency": "USD",
+          "value": "4.34"
+        },
+        "fees": {
+          "currency": "USD",
+          "value": "0.25"
+        },
+        "item": {
+          "payout_item_id": "X8XZALW5T4LUJ",
+          "transaction_id": "8J311422SA0880629",
+          "transaction_status": "SUCCESS",
+          "payout_item_fee": {
+            "currency": "USD",
+            "value": "0.25"
+          },
+          "time_processed": "2026-11-09T00:10:34Z",
+          "receiver": "sb-0***@business.example.com"
+        }
+      }
+    },
+    {
+      "at": "2026-11-09T00:10:49.105Z",
+      "step": "idempotency.replay(payouts.create, same sender_batch_id, new request id) [expected to be rejected]",
+      "method": "POST",
+      "path": "/v1/payments/payouts",
+      "status": 400,
+      "debugId": "f772974c5686d",
+      "note": "USER_BUSINESS_ERROR | Batch with given sender_batch_id already exists | User business error."
+    },
+    {
+      "at": "2026-11-09T00:11:08.254Z",
+      "step": "oauth.token",
+      "method": "POST",
+      "path": "/v1/oauth2/token",
+      "status": 200,
+      "debugId": "f1664447fd63b",
+      "note": "token_type=Bearer expires_in=31738s",
+      "extract": {
+        "token_type": "Bearer",
+        "expires_in": 31738,
+        "app_id": "APP-9LP40066HK332225A",
+        "scope_count": 28,
+        "payout_scopes": [
+          "https://uri.paypal.com/payments/payouts"
+        ]
+      }
+    },
+    {
+      "at": "2026-11-09T00:11:09.663Z",
+      "step": "coverage.local-toolkit-mcp",
+      "method": "MCP tools/list",
+      "path": "@paypal/agent-toolkit@1.11.0 (in-process)",
+      "status": "47 tools",
+      "note": "accept_dispute_claim,activate_recurring_series,cancel_invoice_auto_reminder,cancel_recurring_series,cancel_sent_invoice,cancel_subscription,create_conditional_rules_for_invoice,create_invoice,create_order,create_product,create_recurring_series,create_refund,create_shipment_tracking,create_subscription,create_subscription_plan,delete_invoice,delete_recurring_series,generate_invoice_number,generate_invoice_qr_code,get_dispute,get_invoice,get_merchant_insights,get_order,get_recurring_series,get_refund,get_shipment_tracking,list_disputes,list_invoices,list_products,list_subscription_plans,list_transactions,pay_order,record_payment_for_invoice,record_refund_for_invoice,search_invoicing,send_invoice,send_invoice_reminder,setup_invoice_auto_reminders,show_product_details,show_subscription_details,show_subscription_plan_details,update_invoice_auto_reminder,update_invoicing,update_plan,update_product,update_shipment_tracking,update_subscription",
+      "extract": {
+        "tools": [
+          "accept_dispute_claim",
+          "activate_recurring_series",
+          "cancel_invoice_auto_reminder",
+          "cancel_recurring_series",
+          "cancel_sent_invoice",
+          "cancel_subscription",
+          "create_conditional_rules_for_invoice",
+          "create_invoice",
+          "create_order",
+          "create_product",
+          "create_recurring_series",
+          "create_refund",
+          "create_shipment_tracking",
+          "create_subscription",
+          "create_subscription_plan",
+          "delete_invoice",
+          "delete_recurring_series",
+          "generate_invoice_number",
+          "generate_invoice_qr_code",
+          "get_dispute",
+          "get_invoice",
+          "get_merchant_insights",
+          "get_order",
+          "get_recurring_series",
+          "get_refund",
+          "get_shipment_tracking",
+          "list_disputes",
+          "list_invoices",
+          "list_products",
+          "list_subscription_plans",
+          "list_transactions",
+          "pay_order",
+          "record_payment_for_invoice",
+          "record_refund_for_invoice",
+          "search_invoicing",
+          "send_invoice",
+          "send_invoice_reminder",
+          "setup_invoice_auto_reminders",
+          "show_product_details",
+          "show_subscription_details",
+          "show_subscription_plan_details",
+          "update_invoice_auto_reminder",
+          "update_invoicing",
+          "update_plan",
+          "update_product",
+          "update_shipment_tracking",
+          "update_subscription"
+        ],
+        "create_order_input_has_intent": false
+      }
+    },
+    {
+      "at": "2026-11-09T00:11:11.791Z",
+      "step": "coverage.remote-mcp",
+      "method": "MCP tools/list",
+      "path": "https://mcp.sandbox.paypal.com/sse",
+      "status": "46 tools via sse",
+      "note": "accept_dispute_claim,activate_recurring_series,cancel_invoice_auto_reminder,cancel_recurring_series,cancel_sent_invoice,cancel_subscription,create_conditional_rules_for_invoice,create_invoice,create_order,create_product,create_recurring_series,create_refund,create_shipment_tracking,create_subscription,create_subscription_plan,delete_invoice,delete_recurring_series,generate_invoice_number,generate_invoice_qr_code,get_dispute,get_invoice,get_merchant_insights,get_order,get_recurring_series,get_refund,get_shipment_tracking,list_disputes,list_invoices,list_products,list_subscription_plans,list_transactions,pay_order,record_payment_for_invoice,record_refund_for_invoice,search_invoicing,send_invoice,send_invoice_reminder,setup_invoice_auto_reminders,show_product_details,show_subscription_details,show_subscription_plan_details,update_invoice_auto_reminder,update_invoicing,update_product,update_shipment_tracking,update_subscription",
+      "extract": {
+        "ok": true,
+        "transport": "sse",
+        "url": "https://mcp.sandbox.paypal.com/sse",
+        "tools": [
+          "accept_dispute_claim",
+          "activate_recurring_series",
+          "cancel_invoice_auto_reminder",
+          "cancel_recurring_series",
+          "cancel_sent_invoice",
+          "cancel_subscription",
+          "create_conditional_rules_for_invoice",
+          "create_invoice",
+          "create_order",
+          "create_product",
+          "create_recurring_series",
+          "create_refund",
+          "create_shipment_tracking",
+          "create_subscription",
+          "create_subscription_plan",
+          "delete_invoice",
+          "delete_recurring_series",
+          "generate_invoice_number",
+          "generate_invoice_qr_code",
+          "get_dispute",
+          "get_invoice",
+          "get_merchant_insights",
+          "get_order",
+          "get_recurring_series",
+          "get_refund",
+          "get_shipment_tracking",
+          "list_disputes",
+          "list_invoices",
+          "list_products",
+          "list_subscription_plans",
+          "list_transactions",
+          "pay_order",
+          "record_payment_for_invoice",
+          "record_refund_for_invoice",
+          "search_invoicing",
+          "send_invoice",
+          "send_invoice_reminder",
+          "setup_invoice_auto_reminders",
+          "show_product_details",
+          "show_subscription_details",
+          "show_subscription_plan_details",
+          "update_invoice_auto_reminder",
+          "update_invoicing",
+          "update_product",
+          "update_shipment_tracking",
+          "update_subscription"
+        ],
+        "createOrderInputHasIntent": false,
+        "attempts": [
+          {
+            "kind": "streamable-http",
+            "url": "https://mcp.sandbox.paypal.com/http",
+            "ok": false,
+            "error": "Streamable HTTP error: Error POSTing to endpoint: Not Found"
+          },
+          {
+            "kind": "sse",
+            "url": "https://mcp.sandbox.paypal.com/sse",
+            "ok": true
+          }
+        ]
+      }
+    }
+  ]
+}

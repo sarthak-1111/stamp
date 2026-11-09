@@ -110,4 +110,17 @@ Source: <https://developer.paypal.com/tools/mcp-server/>
 The coverage check against `@paypal/agent-toolkit@1.11.0` is in `GO_NO_GO.md`, step 6.
 
 ## Observed in sandbox
-_Filled in from real runs of `scripts/gonogo.mjs`; see GO_NO_GO.md._
+From real runs of `scripts/gonogo.mjs` (details in `GO_NO_GO.md`, raw log in `docs/evidence/gonogo-run.json`):
+
+| Observation | Value |
+|---|---|
+| Authorization `expiration_time − create_time` | **29.00 days**, for both authorizations (2026-11-09T00:10:02Z → 2026-12-08T00:10:02Z) |
+| Order status right after `authorize` | `COMPLETED`. The hold's state lives on the authorization (`CREATED`). |
+| Void response with `Prefer: return=representation` | HTTP 200 with body, `status: VOIDED`. Replaying it with the same `PayPal-Request-Id` also returned 200 `VOIDED`. |
+| Capture of $5.00 | HTTP 201 `COMPLETED`; `seller_receivable_breakdown`: gross 5.00, PayPal fee 0.66, net 4.34 (USD) |
+| Capture replay, same key / new key | 200 with the same capture ID / 422 `AUTHORIZATION_ALREADY_CAPTURED` |
+| Capture of a voided authorization | 422 `AUTHORIZATION_VOIDED` |
+| Payout of $4.34 | `PENDING` → `SUCCESS` in 24 s (batch created 00:10:19Z, completed 00:10:43Z); payout item fee 0.25 USD, charged to the sender |
+| Payout with a reused `sender_batch_id` | 400 `USER_BUSINESS_ERROR` "Batch with given sender_batch_id already exists" |
+| Order created but never approved | Still `PAYER_ACTION_REQUIRED` at +2 h 59 min; 404 `RESOURCE_NOT_FOUND` the next day |
+| Remote MCP transports (2026-11-06 and 2026-11-09) | `https://mcp.sandbox.paypal.com/http` → 404; `https://mcp.sandbox.paypal.com/sse` with a client-credentials bearer token → works, 46 tools |
