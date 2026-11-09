@@ -57,7 +57,7 @@ const eventsTheme = stampTheme.withParams({ rowHeight: 44 });
 const money = (v: unknown) => (v === null || v === undefined || v === '' ? '' : `$${Number(v).toFixed(2)}`);
 const moneyFmt = (p: ValueFormatterParams) => money(p.value);
 const whenFmt = (p: ValueFormatterParams) =>
-  p.value ? new Date(p.value).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' }) : '';
+  p.value ? new Date(p.value).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit', hourCycle: 'h23' }) : '';
 
 type Tone = 'neutral' | 'held' | 'good' | 'donated' | 'bad';
 const STATE: Record<string, { label: string; tone: Tone }> = {
@@ -377,9 +377,9 @@ export function LedgerGrid({ initialRows, initialEvents }: { initialRows: Ledger
       <dl className="grid grid-cols-2 border-y border-line sm:grid-cols-5">
         {[
           ['Holds placed', String(stats.holds), 'text-ink'],
-          ['Held right now', money(stats.held) || '$0.00', 'text-held'],
+          ['Held right now', money(stats.held) || '$0.00', stats.held ? 'text-held' : 'text-ink'],
           ['Released, $0 charged', String(stats.released), 'text-ink'],
-          ['Donated to charity', money(stats.donated) || '$0.00', 'text-donated'],
+          ['Donated to charity', money(stats.donated) || '$0.00', stats.donated ? 'text-donated' : 'text-ink'],
           ['AI agreed with you', stats.agreement === null ? 'n/a' : `${stats.agreement}%`, 'text-ink', stats.decided ? `${stats.decided} decisions` : 'no decisions yet'],
         ].map(([k, v, tone, hint], i) => (
           <div key={k} className={`py-4 ${i > 0 ? 'sm:border-l sm:border-line sm:pl-6' : ''} ${i % 2 === 1 ? 'max-sm:border-l max-sm:border-line max-sm:pl-4' : ''} ${i >= 2 ? 'max-sm:border-t max-sm:border-line' : ''}`}>
@@ -445,7 +445,8 @@ export function LedgerGrid({ initialRows, initialEvents }: { initialRows: Ledger
         </div>
       ) : null}
 
-      <div className="mt-3 h-[620px]">
+      {/* The grid is as tall as its rows (group header, header, rows, totals row), up to 620px, then it scrolls. */}
+      <div className="mt-3" style={{ height: view === 'holds' ? Math.min(620, Math.max(264, 80 + (rows.length + 1) * 56)) : Math.min(620, Math.max(220, 64 + events.length * 44)) }}>
         {gridState === null ? (
           <div className="h-full animate-none rounded-2xl border border-line bg-card" aria-hidden />
         ) : view === 'holds' ? (

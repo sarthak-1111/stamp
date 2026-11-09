@@ -27,6 +27,7 @@ export function SenderLine({ name, email, note }: { name: string; email: string;
 
 export function TriagePanel({ triage: t, footer = true }: { triage: TriageData; footer?: boolean }) {
   const rec = REC_COPY[t.recommendation];
+  const flags = [...new Set(t.flags.map((f) => f.charAt(0).toUpperCase() + f.slice(1)))];
   return (
     <section aria-label="AI triage" className="well p-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
@@ -44,13 +45,16 @@ export function TriagePanel({ triage: t, footer = true }: { triage: TriageData; 
           <span>This message tried to give the AI instructions. They were ignored and the hold did not change.</span>
         </p>
       ) : null}
-      {t.flags.length ? (
-        <ul className="mt-3 flex flex-wrap gap-1.5" aria-label="Red flags">
-          {[...new Set(t.flags.map((f) => f.charAt(0).toUpperCase() + f.slice(1)))].map((f) => (
-            <li key={f} className="tag !bg-bad-bg !text-[12px] !leading-[18px] !text-bad">
+      {flags.length ? (
+        // Stamp's deterministic flags come first; the model's often restate them in other words, so only
+        // the first three are shown. Neutral tags: the risk meter and the banner already carry the red.
+        <ul className="mt-3 flex flex-wrap items-center gap-1.5" aria-label="Red flags">
+          {flags.slice(0, 3).map((f) => (
+            <li key={f} className="tag text-[12px] leading-[18px]">
               {f}
             </li>
           ))}
+          {flags.length > 3 ? <li className="font-mono text-[12px] leading-[18px] text-ink-3">+{flags.length - 3} more</li> : null}
         </ul>
       ) : null}
       {footer ? (

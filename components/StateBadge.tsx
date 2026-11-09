@@ -53,7 +53,7 @@ export function HoldStamp({ cents, currency = 'USD', size = 'sm', className }: {
  */
 export function Postmark({ tone, top, main, bottom, date, id }: { tone: Tone; top: string; main: string; bottom: string; date?: string; id: string }) {
   return (
-    <svg aria-hidden viewBox="0 0 210 124" className={`w-[184px] shrink-0 -rotate-6 sm:w-[210px] ${TONE_TEXT[tone]}`} fill="none">
+    <svg aria-hidden viewBox="0 0 210 124" className={`w-[184px] shrink-0 -rotate-6 sm:w-[208px] ${TONE_TEXT[tone]}`} fill="none">
       <defs>
         <path id={`${id}-top`} d="M 19,62 A 43,43 0 0 1 105,62" />
         <path id={`${id}-bottom`} d="M 13,62 A 49,49 0 0 0 111,62" />

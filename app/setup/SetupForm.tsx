@@ -217,7 +217,7 @@ export function SetupForm({ mode, charities, windows, initial }: Props) {
             </label>
             <input id={`${uid}-topics`} className="field mt-1.5" value={topics} onChange={(e) => setTopics(e.target.value)} placeholder="battery storage, grid software" aria-describedby={`${uid}-topics-help`} {...err('topics')} />
             <p id={`${uid}-topics-help`} className={help}>
-              Comma-separated, up to 8. The AI scores each message against these
+              Comma-separated, up to 8. The AI scores each message against these.
             </p>
             {topicChips.length ? (
               <ul className="mt-2 flex flex-wrap gap-1.5" aria-label="Topics">
@@ -294,7 +294,7 @@ export function SetupForm({ mode, charities, windows, initial }: Props) {
                 </option>
               ))}
             </select>
-            <p className={help}>Unanswered holds are released when it ends. Demo windows are for trying the flow</p>
+            <p className={help}>Unanswered holds are released when it ends. Demo windows are for trying the flow.</p>
             <ErrorText k="releaseMinutes" />
           </div>
           <div>
@@ -303,7 +303,7 @@ export function SetupForm({ mode, charities, windows, initial }: Props) {
             </label>
             <textarea id={`${uid}-free`} className="field mt-1.5 font-mono !text-[14px]" rows={3} value={freeLane} onChange={(e) => setFreeLane(e.target.value)} placeholder={'@mycompany.com\nfriend@example.org'} aria-describedby={`${uid}-free-help`} {...err('freeLane')} />
             <p id={`${uid}-free-help`} className={help}>
-              One address or @domain per line. These senders skip the hold. Granted free passes appear here too
+              One address or @domain per line. These senders skip the hold. Granted free passes appear here too.
             </p>
             <ErrorText k="freeLane" />
           </div>
@@ -332,7 +332,7 @@ export function SetupForm({ mode, charities, windows, initial }: Props) {
       </fieldset>
 
       <div className="flex flex-col-reverse items-start gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <p className="text-[14px] leading-5 text-ink-3">Stamp never pays you. Released holds cost the sender nothing</p>
+        <p className="text-[14px] leading-5 text-ink-3">Stamp never pays you. Released holds cost the sender nothing.</p>
         <button type="submit" className="btn btn-primary btn-lg" disabled={busy}>
           {busy ? 'Saving…' : mode === 'create' ? 'Create my page' : 'Save settings'}
         </button>

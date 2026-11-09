@@ -5,21 +5,32 @@ import { ACTORS, OPERATIONS, type Actor, type Operation } from '@/lib/holds/mach
  * so this page cannot drift from the code.
  */
 
-const OPS: Array<{ op: Operation; label: string }> = [
-  { op: 'authorize', label: 'Place hold' },
-  { op: 'void', label: 'Release' },
-  { op: 'capture', label: 'Capture' },
-  { op: 'payout', label: 'Donate' },
+const OPS: Array<{ op: Operation; label: string; short: string }> = [
+  { op: 'authorize', label: 'Place hold', short: 'Hold' },
+  { op: 'void', label: 'Release', short: 'Release' },
+  { op: 'capture', label: 'Capture', short: 'Capture' },
+  { op: 'payout', label: 'Donate', short: 'Donate' },
 ];
 
-const ACTOR_LABEL: Record<Actor, string> = {
-  sender: 'Sender',
-  recipient: 'You, the recipient',
-  timer: 'Release timer',
-  paypal: 'PayPal webhook',
-  system: 'Reconciler',
-  ai: 'AI model',
+// Short labels keep all five columns on a phone screen, so the AI row is never scrolled out of view.
+const ACTOR_LABEL: Record<Actor, { label: string; short: string }> = {
+  sender: { label: 'Sender', short: 'Sender' },
+  recipient: { label: 'You, the recipient', short: 'You' },
+  timer: { label: 'Release timer', short: 'Timer' },
+  paypal: { label: 'PayPal webhook', short: 'Webhook' },
+  system: { label: 'Reconciler', short: 'Reconciler' },
+  ai: { label: 'AI model', short: 'AI model' },
 };
+
+function Label({ label, short }: { label: string; short: string }) {
+  if (label === short) return <>{label}</>;
+  return (
+    <>
+      <span className="sm:hidden">{short}</span>
+      <span className="hidden sm:inline">{label}</span>
+    </>
+  );
+}
 
 const REASON_LABEL: Record<string, string> = {
   reply: 'Reply',
@@ -39,16 +50,16 @@ function cell(op: Operation, actor: Actor): string | null {
 export function ActorMatrix() {
   return (
     <div className="overflow-x-auto rounded-2xl border border-line bg-card">
-      <table className="w-full min-w-[520px] border-collapse text-left text-[14px] leading-5">
+      <table className="w-full border-collapse text-left text-[13px] leading-5 sm:text-[14px]">
         <caption className="sr-only">Which actor may start each money operation</caption>
         <thead>
           <tr className="border-b border-line text-ink-3">
-            <th scope="col" className="px-4 py-3 font-normal">
+            <th scope="col" className="px-2 py-3 font-normal first:pl-3 sm:px-4 sm:first:pl-4">
               Who
             </th>
             {OPS.map((o) => (
-              <th key={o.op} scope="col" className="px-4 py-3 font-normal">
-                {o.label}
+              <th key={o.op} scope="col" className="px-2 py-3 font-normal sm:px-4">
+                <Label label={o.label} short={o.short} />
               </th>
             ))}
           </tr>
@@ -58,13 +69,13 @@ export function ActorMatrix() {
             const isAi = a === 'ai';
             return (
               <tr key={a} className={`border-b border-line last:border-0 ${isAi ? 'bg-paper-2' : ''}`}>
-                <th scope="row" className={`px-4 py-3 ${isAi ? 'font-medium text-ink' : 'font-normal text-ink-2'}`}>
-                  {ACTOR_LABEL[a]}
+                <th scope="row" className={`py-3 pr-2 pl-3 sm:px-4 ${isAi ? 'font-medium text-ink' : 'font-normal text-ink-2'}`}>
+                  <Label {...ACTOR_LABEL[a]} />
                 </th>
                 {OPS.map((o) => {
                   const v = cell(o.op, a);
                   return (
-                    <td key={o.op} className="px-4 py-3">
+                    <td key={o.op} className="px-2 py-3 sm:px-4">
                       {v ? <span className="text-ink">{v}</span> : <span className={isAi ? 'font-medium text-bad' : 'text-ink-3'}>No</span>}
                     </td>
                   );

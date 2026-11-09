@@ -160,9 +160,9 @@ export function InboxClient({ initial }: { initial: InboxView }) {
 
       <dl className="mt-8 grid grid-cols-2 border-y border-line sm:grid-cols-4">
         {[
-          ['Held right now', formatMoney(view.stats.heldCents), `${view.stats.heldCount} ${view.stats.heldCount === 1 ? 'hold' : 'holds'}`, 'text-held'],
+          ['Held right now', formatMoney(view.stats.heldCents), `${view.stats.heldCount} ${view.stats.heldCount === 1 ? 'hold' : 'holds'}`, view.stats.heldCents ? 'text-held' : 'text-ink'],
           ['Released to senders', String(view.stats.releasedCount), 'nothing charged', 'text-ink'],
-          ['Donated for spam', formatMoney(view.stats.donatedCents), r.charityName, 'text-donated'],
+          ['Donated for spam', formatMoney(view.stats.donatedCents), r.charityName, view.stats.donatedCents ? 'text-donated' : 'text-ink'],
           ['Your return rate', view.returns.rate === null ? 'New' : `${view.returns.rate}%`, `${view.returns.returned} of ${view.returns.decided} decided`, 'text-ink'],
         ].map(([k, v, hint, tone], i) => (
           <div key={k} className={`py-4 ${STAT_CELL[i]}`}>
