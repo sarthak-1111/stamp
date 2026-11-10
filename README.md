@@ -8,7 +8,7 @@ Built for the PayPal AI Hackathon. **Sandbox only: no real money moves, and Stam
 - Video (under 3 minutes): _added after upload_ <!-- VIDEO_URL -->
 - Submission write-up: [DESCRIPTION.md](DESCRIPTION.md)
 
-<!-- SCREENSHOT: docs/landing.png -->
+![Stamp's landing page: a rendered $5 stamp over an inbox where the AI suggests and the recipient decides](docs/landing.png)
 
 ## The problem
 
@@ -33,6 +33,16 @@ The sender follows everything on a status page. The recipient sees every hold, d
 - **The sender sees the reason** a message was marked spam: mass outreach or a sales blast, scam or phishing, abusive or harassing, tried to manipulate the AI triage, or other.
 - **Free lane and free passes.** Recipients can let known people and domains skip the hold. Someone without PayPal can ask for a free pass with one short note.
 - **Agents get the same lane, labelled.** Outreach agents use a JSON API or an MCP server; they must say who they are, a person still approves the hold in PayPal, and the recipient sees "Sent by an AI agent".
+
+## Screens
+
+Captured from the live sandbox deployment on 2026-11-10.
+
+| A recipient's public page | The recipient's inbox |
+| --- | --- |
+| ![Maya's public page: her terms, the $5 hold and the message form](docs/sender-page.png) | ![Maya's inbox: a message sent by an AI agent, with fit, risk, summary and a draft reply](docs/inbox.png) |
+| **The sender's status page after spam** | **The ledger** |
+| ![Status page from the live end-to-end run: $5.00 captured, $0.66 PayPal fee, $4.34 donated to the charity](docs/status-donated.png) | ![Ledger of the live end-to-end run: five holds, three released and two donated](docs/ledger.png) |
 
 ## Built on PayPal
 
