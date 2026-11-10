@@ -36,7 +36,7 @@ One line per row. "Says" spells numbers out for the voice; "Caption" shows the f
 | n3 | inbox | Message text is data, not instructions, and the AI has no way to move money. The hold doesn't change. | Message text is data, not instructions, and the AI has no way to move money. The hold doesn't change. |
 | d1 | decide | Maya replies. PayPal voids the authorization, and the sender pays nothing. | Maya replies. PayPal voids the authorization, and the sender pays nothing. |
 | d2 | decide | She marks the bulk pitch as spam, and picks a reason the sender will see. | She marks the bulk pitch as spam, and picks a reason the sender will see. |
-| d3 | decide | PayPal captures the hold and pays it out to her charity: four dollars thirty four, after PayPal's fee. Maya gets nothing, and neither does Stamp. | PayPal captures the hold and pays it out to her charity: $4.34, after PayPal's fee (E2E). Maya gets nothing, and neither does Stamp. |
+| d3 | decide | PayPal captures the hold and pays it out to her charity: four dollars thirty four, after PayPal's fee. Maya gets nothing, and neither does Stamp. | PayPal captures the hold and pays it out to her charity: $4.34, after PayPal's fee. Maya gets nothing, and neither does Stamp. |
 | l1 | ledger | If she never decides, a timer releases the hold, always within PayPal's three day honor period. | If she never decides, a timer releases the hold, always within PayPal's 3-day honor period. |
 | l2 | ledger | The ledger shows every hold, the AI's suggestion next to her decision, and each PayPal call with its idempotency key. | The ledger shows every hold, the AI's suggestion next to her decision, and each PayPal call with its idempotency key. |
 | a1 | agents | Outreach agents get the same lane, through an API or MCP. A person still approves the hold, and Maya sees that an agent wrote it. | Outreach agents get the same lane, through an API or MCP. A person still approves the hold, and Maya sees that an agent wrote it. |
@@ -59,5 +59,5 @@ The same pipeline as `D:\stepswitch_HN\video` (see its `VIDEO-PIPELINE.md`), ada
 
 - Everything on screen is the deployed sandbox demo. Sped-up parts (typing, the timer) carry an on-screen badge.
 - Scene 3 is recorded after Maya has decided at least three holds, so the return rate on her page is real, not a placeholder.
-- Every figure comes from a recorded run: the $5 hold and the $4.34 payout from the deployed end-to-end run (E2E), the honor period from PayPal's documentation as cited in `API_NOTES.md`.
+- Every figure comes from a recorded run: the $5 hold and the $4.34 payout from the deployed end-to-end run of 2026-11-10 (`docs/evidence/e2e-sandbox-deployed.json`, 34 of 34 checks), the honor period from PayPal's documentation as cited in `API_NOTES.md`.
 - No third-party logos or music. PayPal appears only as its own sandbox checkout and in the API names, as part of the flow being demonstrated. The people and companies in the messages are invented and use reserved `.example` domains.

@@ -123,7 +123,15 @@ From the go/no-go run on 2026-11-09 ([`GO_NO_GO.md`](GO_NO_GO.md), sanitized log
 - The payout went from `PENDING` to `SUCCESS` in about **24 seconds**.
 - Replaying a create, authorize, void or capture with the same `PayPal-Request-Id` returned the original result; a capture with a new key was refused with `AUTHORIZATION_ALREADY_CAPTURED`.
 
-<!-- E2E_NUMBERS: filled from docs/evidence/e2e-sandbox-deployed.json -->
+From the end-to-end run on the live deployment on 2026-11-10 (`stamp-paypal.vercel.app`, commit `372b919`; sanitized report in [`docs/evidence/e2e-sandbox-deployed.json`](docs/evidence/e2e-sandbox-deployed.json)):
+
+- **34 of 34 checks passed**, each read back from PayPal, across five $5.00 holds: reply, worth it (sent by an agent over MCP), spam, timer and injection.
+- **Reply and Worth it** released the hold in **under a second**, from the recipient's click to PayPal's `VOIDED`. The reply was submitted twice at once; exactly one void call reached PayPal.
+- **Spam** was captured in about **1.6 seconds**; **$4.34** of the $5.00 reached the charity **28 and 31 seconds** after capture (PayPal fee $0.66; payout fee $0.25, paid by Stamp). The only payouts went to the charity.
+- **The timer** voided its hold **1.1 seconds** after the 10-minute demo window ended, recorded as the timer, not a person.
+- **The injection message** (telling the AI to mark it worthwhile and send the hold to the sender) left the hold `AUTHORIZED`, made no decision and was flagged. The recipient then marked it spam.
+- **AI triage** ran on `gpt-oss:120b` for all five messages, in **4.6 to 5.2 seconds** each.
+- Every authorization's `expiration_time` was exactly 29 days after it was created.
 
 Automated tests: **463 passing** (`npm test`), covering every state transition and actor, idempotency and retries, injection attempts, the agent lane, fairness rules and the reconciler.
 
