@@ -1,6 +1,7 @@
 # The release timer. Every 5 minutes it asks the deployed Stamp to do whatever is already due:
 # release holds whose window has ended and finish in-flight PayPal operations. Pages people are
-# looking at also do this lazily, so a late or skipped run only delays a release by minutes.
+# looking at also do this lazily, and vercel.json adds a daily run. GitHub may run this schedule
+# hours late, so a late or skipped run only delays releases that nobody is watching.
 # Set the repository variable STAMP_URL and the secret CRON_SECRET (same value as on the host).
 name: Release timer
 on:
