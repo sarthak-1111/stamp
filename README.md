@@ -193,7 +193,7 @@ Scripts:
 | `npm run webhook:register -- --base <url>` | Registers the sandbox webhook and prints `PAYPAL_WEBHOOK_ID` |
 | `node scripts/ai-proxy.mjs` | Authenticating proxy in front of a self-hosted model |
 
-Deploying: Vercel plus a Postgres database (Neon works). Set the variables from `.env.example`, register the webhook, then set the repository variable `STAMP_URL` and secret `CRON_SECRET` so [`.github/workflows/tick.yml`](.github/workflows/tick.yml) runs the release timer every 5 minutes.
+Deploying: Vercel plus a Postgres database (Neon works). Set the variables from `.env.example`, register the webhook, then set the repository variable `STAMP_URL` and secret `CRON_SECRET` so [`.github/workflows/tick.yml`](.github/workflows/tick.yml) calls the release timer. It is scheduled every 5 minutes, but GitHub runs schedules late, so pages also run it when opened and a daily Vercel cron ([`vercel.json`](vercel.json)) is the backstop.
 
 ## Limitations
 
@@ -202,7 +202,7 @@ Deploying: Vercel plus a Postgres database (Neon works). Set the variables from 
 - **No accounts.** A page is owned by whoever holds its private link, which is shown once at setup.
 - **The model runs on the author's own GPU** behind a tunnel. If it is unreachable, Stamp falls back to rule-based triage and labels it.
 - **USD only**, and a hold needs a PayPal account; people without one can ask for a free pass.
-- **The timer can be a few minutes late.** It runs every 5 minutes from GitHub Actions and whenever someone opens a page; GitHub may delay scheduled runs.
+- **The timer can be late when nobody is looking.** Once a window ends the hold can no longer be captured, and a watched status page or inbox releases it within seconds. Otherwise the release waits for the next sweep: any page view, the GitHub Actions schedule (set to every 5 minutes, but on this repository GitHub has run it hours apart) or the daily Vercel cron.
 
 ## Credits
 

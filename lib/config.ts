@@ -12,7 +12,7 @@ export type Charity = { id: string; name: string; email: string; blurb: string }
 
 export type ReleaseOption = { minutes: number; label: string; demo?: boolean };
 
-/** Auto-release windows. All end well inside PayPal's 3-day honor period (see API_NOTES.md §1). */
+/** Auto-release windows. All end within PayPal's 3-day honor period (72 h at most; see API_NOTES.md §1). */
 export const RELEASE_OPTIONS: ReleaseOption[] = [
   { minutes: 3, label: '3 minutes (demo)', demo: true },
   { minutes: 10, label: '10 minutes (demo)', demo: true },

@@ -13,7 +13,7 @@ const FAIR = [
   { title: 'Refund by default', body: 'A hold is released unless you actively mark the message as spam. Silence costs the sender nothing.' },
   { title: 'You set the price', body: 'Between $1 and $20, shown on your page before anyone writes.' },
   { title: 'A free lane', body: 'People and domains you trust skip the hold entirely.' },
-  { title: 'Auto-release', body: 'Unanswered holds release when your window ends: at most 72 hours, within PayPal’s three-day honor period.' },
+  { title: 'Auto-release', body: 'Unanswered holds are released after your window ends. A window is 72 hours at most, inside PayPal’s three-day honor period.' },
   { title: 'Spam goes to charity', body: 'A captured hold is paid out to the charity you picked, after PayPal’s fee. Stamp covers the payout fee.' },
   { title: 'PayPal is the source of truth', body: 'Webhooks are signature-verified, and Stamp re-reads PayPal before it shows you a money state.' },
 ];
