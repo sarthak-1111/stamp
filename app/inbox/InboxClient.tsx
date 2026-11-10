@@ -41,6 +41,7 @@ function isOpen(c: InboxCard): boolean {
   return c.hold?.state === 'AUTHORIZED';
 }
 
+/** The preselected reason. It is labelled "AI suggests" only when the AI actually recommended spam. */
 function suggestedReason(c: InboxCard): SpamReason {
   if (c.triage?.injection) return 'manipulation';
   if ((c.triage?.riskScore ?? 0) >= 70) return 'scam';
@@ -325,7 +326,7 @@ export function InboxClient({ initial }: { initial: InboxView }) {
                   <label key={k} className={`flex cursor-pointer items-center gap-3 rounded-lg px-3 py-2 text-[15px] transition-colors ${reason === k ? 'bg-paper-2' : 'hover:bg-paper-2'}`}>
                     <input type="radio" name="spam-reason" value={k} checked={reason === k} onChange={() => setReason(k)} className="accent-[var(--ink)]" />
                     {SPAM_REASON_LABEL[k]}
-                    {k === suggestedReason(confirm) && confirm.triage ? <span className="ml-auto text-[12px] text-ink-3">AI suggests</span> : null}
+                    {k === suggestedReason(confirm) && confirm.triage?.recommendation === 'spam' ? <span className="ml-auto text-[12px] text-ink-3">AI suggests</span> : null}
                   </label>
                 ))}
               </div>
