@@ -4,7 +4,7 @@
 
 Built for the PayPal AI Hackathon. **Sandbox only: no real money moves, and Stamp never pays the recipient.**
 
-- Live demo: _added at deploy_ <!-- DEMO_URL -->
+- Live demo: **https://stamp-paypal.vercel.app** (PayPal sandbox)
 - Video (under 3 minutes): _added after upload_ <!-- VIDEO_URL -->
 - Submission write-up: [DESCRIPTION.md](DESCRIPTION.md)
 
@@ -139,6 +139,7 @@ The Devpost testing instructions include a PayPal **sandbox** buyer login and th
 For agents:
 
 ```bash
+STAMP_URL=https://stamp-paypal.vercel.app
 curl -X POST "$STAMP_URL/api/v1/messages" -H 'Content-Type: application/json' -d '{
   "to": "maya",
   "from": { "name": "Northbeam", "email": "ava@northbeam.example" },
