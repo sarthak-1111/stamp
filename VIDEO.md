@@ -1,5 +1,3 @@
-<!-- DRAFT for review (checkpoint 3). Figures marked E2E come from docs/evidence/e2e-sandbox-deployed.json; if the run differs, the line changes, not the evidence. -->
-
 # Stamp: video script (2:45)
 
 The video shows the deployed demo working end to end in the PayPal sandbox: a sender places a hold, the AI triages, the recipient replies to one message and marks another as spam, the charity is paid, the timer releases a third, and an agent sends one over MCP. Target length 2:45 (the limit is 3:00).
@@ -12,7 +10,7 @@ The video shows the deployed demo working end to end in the PayPal sandbox: a se
 | 2 | idea | 0:13 | 0:29 | The landing hero's rendered $5 stamp settles; the HELD postmark strikes it on "refundable hold". The three outcomes appear as one line each: released, released by the timer, donated |
 | 3 | send | 0:29 | 0:56 | Capture of `/@maya`: the terms card, the form filled in (typing sped up, badge says so), "Hold $5 with PayPal and send", the PayPal sandbox approval, the return to the status page with the hold and "nothing charged" |
 | 4 | inbox | 0:56 | 1:28 | Capture of the inbox. Push-in on the triage panel of a legitimate message: fit and reason, risk and reason, summary, draft reply. Then the injection message: its red banner, "the hold did not change", the hold still shown as held |
-| 5 | decide | 1:28 | 2:02 | Reply on the first message; cut to the sender's status page: released, $0. Spam on the bulk pitch: the confirmation dialog with the reason picker; status page: captured, then donated, with the amounts (E2E) |
+| 5 | decide | 1:28 | 2:02 | Reply on the first message; cut to the sender's status page: released, $0. Spam on the bulk pitch: the confirmation dialog with the reason picker; status page: captured, then donated, with the amounts |
 | 6 | ledger | 2:02 | 2:22 | The timer: a hold on a demo-window page reaching its release (sped up, badge). Then the ledger: the AI's suggestion next to each decision, a row opened to its PayPal calls and their `PayPal-Request-Id` |
 | 7 | agents | 2:22 | 2:34 | A terminal calling `send_message` on `/api/mcp` and getting an `approve_url`; the inbox card with "Sent by an AI agent" |
 | 8 | close | 2:34 | 2:45 | The landing page's money table with the AI row's four "No" cells; then the wordmark, the line "Stamp never pays the recipient", the demo and repository URLs |
@@ -47,7 +45,7 @@ About 340 words: roughly 2:15 of voice at the pipeline's pace, leaving room for 
 
 ## How it is made
 
-The same pipeline as `D:\stepswitch_HN\video` (see its `VIDEO-PIPELINE.md`), adapted:
+A scripted pipeline, kept outside this repository:
 
 - **Captures:** Playwright records the deployed demo at 1920x1080 with an injected cursor, click ripple and follow-scroll; no browser chrome is recorded. The PayPal sandbox approval is recorded with a person at the keyboard (sandbox buyer login), because the build never types PayPal credentials.
 - **Scenes:** Remotion for the hook, the idea scene (the rendered stamp and postmark from the landing page), the frames around captures, the push-ins and the close card.
