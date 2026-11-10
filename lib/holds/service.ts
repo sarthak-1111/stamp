@@ -760,6 +760,20 @@ export async function maybeSweep(): Promise<void> {
 }
 
 /** Status page / inbox polling: release if due, otherwise re-verify with PayPal at most every 10 s. */
+/**
+ * How often a page someone is watching may re-read PayPal for one hold. Fast while money is moving;
+ * an unapproved checkout backs off as it ages (the return URL and the webhook usually arrive first);
+ * an idle authorization changes only by a recipient decision (made here) or at PayPal (sent by webhook).
+ */
+export function checkIntervalSeconds(hold: Pick<Hold, 'state' | 'pendingOp' | 'createdAt'>, now = Date.now()): number {
+  if (hold.pendingOp || hold.state === 'APPROVED' || hold.state === 'CAPTURED') return 10;
+  if (hold.state === 'DRAFT') {
+    const age = now - Date.parse(hold.createdAt);
+    return age < 3 * 60_000 ? 10 : age < 15 * 60_000 ? 30 : 120;
+  }
+  return 60;
+}
+
 export async function refreshHold(holdId: string): Promise<Hold | null> {
   const hold = await repo.getHold(holdId);
   if (!hold || isTerminal(hold.state)) return hold;
@@ -767,7 +781,7 @@ export async function refreshHold(holdId: string): Promise<Hold | null> {
     if (hold.state === 'AUTHORIZED' && !hold.pendingOp && hold.releaseAt && Date.parse(hold.releaseAt) <= Date.now()) {
       if (await autoRelease(hold.id)) return repo.getHold(hold.id);
     }
-    if (await repo.takeCheckSlot(hold.id, 10)) return await reconcileHold(hold.id);
+    if (await repo.takeCheckSlot(hold.id, checkIntervalSeconds(hold))) return await reconcileHold(hold.id);
   } catch (err) {
     console.error('[stamp] refresh failed', holdId, err);
   }

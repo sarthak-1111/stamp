@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import type { Db } from '@/lib/db';
 import { getHold, getHoldByMessageId, listEvents } from '@/lib/holds/repo';
 import {
+  checkIntervalSeconds,
   handleApprovalCancel,
   handleApprovalReturn,
   handleWebhookEvent,
@@ -256,5 +257,23 @@ describe('PayPal is the source of truth', () => {
     const transitions = events.filter((e) => e.kind === 'transition').map((e) => `${e.fromState}->${e.toState}:${e.actor}`);
     expect(transitions).toEqual(['DRAFT->APPROVED:sender', 'APPROVED->AUTHORIZED:sender', 'AUTHORIZED->VOIDED:recipient']);
     expect(events.some((e) => e.kind === 'decision' && e.detail.action === 'worth_it')).toBe(true);
+  });
+});
+
+describe('watched pages re-read PayPal at a pace that fits the hold', () => {
+  const now = Date.parse('2026-11-10T08:00:00Z');
+  const ago = (ms: number) => new Date(now - ms).toISOString();
+  it('is fast while money is moving', () => {
+    expect(checkIntervalSeconds({ state: 'AUTHORIZED', pendingOp: 'void', createdAt: ago(3_600_000) }, now)).toBe(10);
+    expect(checkIntervalSeconds({ state: 'APPROVED', pendingOp: null, createdAt: ago(60_000) }, now)).toBe(10);
+    expect(checkIntervalSeconds({ state: 'CAPTURED', pendingOp: null, createdAt: ago(600_000) }, now)).toBe(10);
+  });
+  it('backs off an unapproved checkout as it ages', () => {
+    expect(checkIntervalSeconds({ state: 'DRAFT', pendingOp: null, createdAt: ago(60_000) }, now)).toBe(10);
+    expect(checkIntervalSeconds({ state: 'DRAFT', pendingOp: null, createdAt: ago(5 * 60_000) }, now)).toBe(30);
+    expect(checkIntervalSeconds({ state: 'DRAFT', pendingOp: null, createdAt: ago(40 * 60_000) }, now)).toBe(120);
+  });
+  it('checks an idle authorization once a minute', () => {
+    expect(checkIntervalSeconds({ state: 'AUTHORIZED', pendingOp: null, createdAt: ago(60_000) }, now)).toBe(60);
   });
 });

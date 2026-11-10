@@ -133,7 +133,7 @@ From the end-to-end run on the live deployment on 2026-11-10 (`stamp-paypal.verc
 - **AI triage** ran on `gpt-oss:120b` for all five messages, in **4.6 to 5.2 seconds** each.
 - Every authorization's `expiration_time` was exactly 29 days after it was created.
 
-Automated tests: **463 passing** (`npm test`), covering every state transition and actor, idempotency and retries, injection attempts, the agent lane, fairness rules and the reconciler.
+Automated tests: **466 passing** (`npm test`), covering every state transition and actor, idempotency and retries, injection attempts, the agent lane, fairness rules and the reconciler.
 
 ## Try it (judges)
 
@@ -168,7 +168,7 @@ git clone https://github.com/sarthak-1111/stamp && cd stamp
 npm install
 cp .env.example .env.local   # fill in the PayPal sandbox values
 npm run dev                  # http://localhost:3000, uses embedded PGlite, no database to install
-npm test                     # 463 tests, no network
+npm test                     # 466 tests, no network
 ```
 
 Without `AI_BASE_URL`, triage is rule-based. Point it at any OpenAI-compatible endpoint to use a model. Every variable is documented in [`.env.example`](.env.example).
