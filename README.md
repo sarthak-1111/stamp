@@ -5,7 +5,7 @@
 Built for the PayPal AI Hackathon. **Sandbox only: no real money moves, and Stamp never pays the recipient.**
 
 - Live demo: **https://stamp-paypal.vercel.app** (PayPal sandbox)
-- Video (under 3 minutes): _added after upload_ <!-- VIDEO_URL -->
+- Video (2:48): **https://youtu.be/3dR6POWZNCE**
 - Submission write-up: [DESCRIPTION.md](DESCRIPTION.md)
 
 ![Stamp's landing page: a rendered $5 stamp over an inbox where the AI suggests and the recipient decides](docs/landing.png)

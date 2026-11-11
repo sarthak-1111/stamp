@@ -1,5 +1,7 @@
 # Stamp: video script (2:45)
 
+Final video: **https://youtu.be/3dR6POWZNCE** (2:48).
+
 The video shows the deployed demo working end to end in the PayPal sandbox: a sender places a hold, the AI triages, the recipient replies to one message and marks another as spam, the charity is paid, the timer releases a third, and an agent sends one over MCP. Target length 2:45 (the limit is 3:00).
 
 ## Scenes
